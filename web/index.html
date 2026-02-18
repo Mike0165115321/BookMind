@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>📚 RAG Knowledge Base</title>
+    <meta name="description" content="ระบบค้นหาความรู้จากหนังสือด้วย AI — Hybrid Search + Adaptive Reranking + Gemini">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="header-brand">
+            <span class="header-icon">📚</span>
+            <h1>RAG Knowledge Base</h1>
+        </div>
+        <div class="header-badges">
+            <span class="badge badge-model">🤖 Gemini 2.5 Flash</span>
+            <span class="badge badge-hyde">🪄 HyDE</span>
+        </div>
+    </header>
+
+    <!-- Main Layout -->
+    <main class="main-layout">
+        <!-- Chat Area -->
+        <div class="chat-container">
+            <div class="chat-messages" id="chatMessages">
+                <!-- Welcome message -->
+                <div class="welcome-card">
+                    <div class="welcome-icon">📖</div>
+                    <h2>ยินดีต้อนรับสู่ RAG Knowledge Base</h2>
+                    <p>ถามอะไรก็ได้เกี่ยวกับหนังสือในคลัง — ระบบจะค้นหา วิเคราะห์ และตอบจากเนื้อหาจริง</p>
+                    <div class="welcome-chips">
+                        <button class="chip" onclick="askSuggestion(this)">การสร้างนิสัยที่ดีต้องเริ่มยังไง</button>
+                        <button class="chip" onclick="askSuggestion(this)">Rich Dad Poor Dad สอนอะไร</button>
+                        <button class="chip" onclick="askSuggestion(this)">วิธีคิดแบบ Growth Mindset</button>
+                        <button class="chip" onclick="askSuggestion(this)">7 Habits มีอะไรบ้าง</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Input Area -->
+            <div class="input-area">
+                <div class="input-wrapper">
+                    <div class="input-controls">
+                        <label class="hyde-toggle" title="HyDE Query Transform">
+                            <input type="checkbox" id="hydeToggle" checked>
+                            <span class="toggle-slider"></span>
+                            <span class="toggle-label">HyDE</span>
+                        </label>
+                    </div>
+                    <div class="input-row">
+                        <textarea id="queryInput" placeholder="ถามคำถามเกี่ยวกับหนังสือ..." rows="1" autofocus></textarea>
+                        <button id="sendBtn" onclick="sendMessage()" title="ส่งคำถาม">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sources Panel -->
+        <aside class="sources-panel" id="sourcesPanel">
+            <div class="sources-header">
+                <h3>📑 แหล่งอ้างอิง</h3>
+            </div>
+            <div class="sources-list" id="sourcesList">
+                <div class="sources-empty">
+                    <span>🔍</span>
+                    <p>แหล่งอ้างอิงจะแสดงที่นี่เมื่อค้นหา</p>
+                </div>
+            </div>
+        </aside>
+    </main>
+
+    <!-- Marked.js for markdown rendering -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="/static/app.js"></script>
+</body>
+</html>

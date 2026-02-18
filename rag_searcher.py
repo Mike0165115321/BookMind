@@ -122,12 +122,25 @@ class RAGSearcher:
 
         return merged
 
+    def _should_rerank(self, merged_scores):
+        """
+        Adaptive Reranking: decide whether to use Cross-Encoder.
+        If Top-1 score is clearly dominant (large gap to Top-2), skip reranking.
+        Returns: (should_rerank: bool, gap: float)
+        """
+        if len(merged_scores) < 2:
+            return False, 1.0  # Only 1 result, no need to rerank
+
+        sorted_scores = sorted(merged_scores.values(), reverse=True)
+        gap = sorted_scores[0] - sorted_scores[1]
+        return gap <= config.RERANK_SCORE_GAP, gap
+
     def search(self, query, top_k=None):
         """
-        Full hybrid search pipeline:
+        Full hybrid search pipeline with Adaptive Reranking:
           1. Dense (FAISS) + BM25 retrieval
           2. Merge scores
-          3. Cross-Encoder reranking
+          3. Check score gap → Rerank only if ambiguous
         """
         top_k = top_k or config.TOP_K_RETRIEVAL
 
@@ -141,15 +154,24 @@ class RAGSearcher:
         else:
             merged = dense_scores
 
-        # Get top candidates (take more than top_k for better reranking pool)
+        # Get top candidates
         sorted_indices = sorted(merged.keys(), key=lambda x: merged[x], reverse=True)[:top_k]
         retrieved_docs = [self.data[idx] for idx in sorted_indices]
+        merged_scores_list = [merged[idx] for idx in sorted_indices]
 
         if not retrieved_docs:
             return []
 
-        # Stage 3: Reranking (Cross-Encoder)
-        sentence_pairs = [[query, doc] for doc in retrieved_docs]
-        rerank_scores = self.rerank_model.predict(sentence_pairs)
+        # Stage 3: Adaptive Reranking
+        need_rerank, gap = self._should_rerank(merged)
 
-        return sorted(zip(retrieved_docs, rerank_scores), key=lambda x: x[1], reverse=True)
+        if need_rerank:
+            # Ambiguous → use Cross-Encoder for precision
+            print(f"   🔬 Reranking (gap={gap:.3f} ≤ {config.RERANK_SCORE_GAP}) → Cross-Encoder")
+            sentence_pairs = [[query, doc] for doc in retrieved_docs]
+            rerank_scores = self.rerank_model.predict(sentence_pairs)
+            return sorted(zip(retrieved_docs, rerank_scores), key=lambda x: x[1], reverse=True)
+        else:
+            # Clear winner → skip Reranker, use hybrid scores directly
+            print(f"   ⚡ Skip Reranker (gap={gap:.3f} > {config.RERANK_SCORE_GAP}) → Fast mode")
+            return list(zip(retrieved_docs, merged_scores_list))

@@ -36,8 +36,29 @@ HYBRID_DENSE_WEIGHT = 0.7    # Weight for Dense/FAISS (semantic meaning)
 HYBRID_BM25_WEIGHT = 0.3     # Weight for BM25 (keyword matching)
 
 # ──────────────────────────────────────────────
+# Adaptive Reranking
+# ──────────────────────────────────────────────
+# If score gap between Top-1 and Top-2 from Hybrid Search > threshold:
+#   → Skip Reranker (query is clear, ~5ms)
+# If gap <= threshold:
+#   → Use Reranker (query is ambiguous, ~300ms)
+RERANK_SCORE_GAP = 0.15    # Gap threshold (0.0 = always rerank, 1.0 = never rerank)
+
+# ──────────────────────────────────────────────
 # Search tuning
 # ──────────────────────────────────────────────
 TOP_K_RETRIEVAL = 10   # Number of candidates from FAISS (Bi-Encoder stage)
 TOP_K_DISPLAY = 5      # Number of final results shown to user (after Reranking)
 BATCH_SIZE = 32        # Embedding batch size (adjust based on VRAM)
+
+# ──────────────────────────────────────────────
+# LLM Generation (Gemini) & Query Transform (Groq)
+# ──────────────────────────────────────────────
+# Model settings are in core/config.py (loaded from .env)
+# API keys are managed by core/key_manager.py (round-robin rotation)
+from core.config import settings
+GEMINI_MODEL = settings.GEMINI_MODEL       # gemini-2.5-flash
+GROQ_MODEL = settings.GROQ_MODEL           # llama-3.3-70b-versatile
+ENABLE_HYDE = True                          # Enable HyDE query transform
+
+

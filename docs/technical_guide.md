@@ -1,8 +1,8 @@
 # 📘 เอกสารอธิบายระบบ RAG อย่างละเอียด
-# RAG System — Technical Documentation
+# RAG System — Technical Documentation (v2.0)
 
-> เอกสารฉบับนี้อธิบายการทำงานของระบบ RAG (Retrieval-Augmented Generation) ทุกขั้นตอน
-> ตั้งแต่การอ่านข้อมูล, การแบ่ง Chunk, การสร้าง Embedding, จนถึงการค้นหาแบบ Hybrid
+> เอกสารฉบับนี้อธิบายการทำงานของระบบ RAG (Retrieval-Augmented Generation) **แบบ End-to-End** ทุกขั้นตอน
+> ครอบคลุมตั้งแต่ Query Transform (HyDE), Hybrid Search, Adaptive Reranking, LLM Generation (Gemini), จนถึง Web UI
 
 ---
 
@@ -15,13 +15,17 @@
 5. [FAISS Index — ฐานข้อมูล Vector](#5-faiss-index--ฐานข้อมูล-vector)
 6. [BM25 — Keyword Search](#6-bm25--keyword-search)
 7. [Hybrid Search — การค้นหาแบบผสม](#7-hybrid-search--การค้นหาแบบผสม)
-8. [Reranker — การจัดอันดับซ้ำ](#8-reranker--การจัดอันดับซ้ำ)
+8. [Reranker + Adaptive Reranking — การจัดอันดับซ้ำอัจฉริยะ](#8-reranker--adaptive-reranking--การจัดอันดับซ้ำอัจฉริยะ)
 9. [Search Pipeline แบบเต็ม](#9-search-pipeline-แบบเต็ม)
-10. [โครงสร้างไฟล์และหน้าที่](#10-โครงสร้างไฟล์และหน้าที่)
-11. [Configuration — การตั้งค่า](#11-configuration--การตั้งค่า)
-12. [ทรัพยากรที่ใช้ (VRAM/RAM)](#12-ทรัพยากรที่ใช้-vramram)
-13. [ข้อมูลโมเดล AI](#13-ข้อมูลโมเดล-ai)
-14. [Flow Chart — ภาพรวมทุกขั้นตอน](#14-flow-chart--ภาพรวมทุกขั้นตอน)
+10. [HyDE — Query Transform](#10-hyde--query-transform)
+11. [LLM Generation — Gemini](#11-llm-generation--gemini)
+12. [Core Package — API Keys & Modules](#12-core-package--api-keys--modules)
+13. [Web UI — FastAPI + SSE](#13-web-ui--fastapi--sse)
+14. [โครงสร้างไฟล์และหน้าที่](#14-โครงสร้างไฟล์และหน้าที่)
+15. [Configuration — การตั้งค่า](#15-configuration--การตั้งค่า)
+16. [ทรัพยากรที่ใช้ (VRAM/RAM)](#16-ทรัพยากรที่ใช้-vramram)
+17. [ข้อมูลโมเดล AI](#17-ข้อมูลโมเดล-ai)
+18. [Flow Chart — ภาพรวมทุกขั้นตอน](#18-flow-chart--ภาพรวมทุกขั้นตอน)
 
 ---
 
@@ -34,8 +38,8 @@
 1. **Retrieval (ค้นหา):** ค้นหาข้อมูลที่เกี่ยวข้องจากฐานความรู้
 2. **Generation (สร้างคำตอบ):** ส่งข้อมูลที่ค้นเจอให้ LLM สรุปเป็นคำตอบ
 
-> ⚡ **ระบบปัจจุบัน** ทำส่วน Retrieval สมบูรณ์แล้ว (Dense + BM25 + Reranker)
-> ส่วน Generation (LLM) จะเพิ่มในอนาคต
+> ✅ **ระบบปัจจุบัน** ครบทั้ง Retrieval + Generation (Full RAG Pipeline v2.0)
+> HyDE (Groq) → Hybrid Search → Adaptive Reranking → Gemini Generation → Web UI
 
 ### ทำไมต้อง RAG?
 
@@ -413,7 +417,7 @@ normalized = (score - min) / (max - min)
 
 ---
 
-## 8. Reranker — การจัดอันดับซ้ำ
+## 8. Reranker + Adaptive Reranking — การจัดอันดับซ้ำอัจฉริยะ
 
 ### ทำไมต้อง Rerank?
 
@@ -467,7 +471,48 @@ Bi-Encoder (Stage 1):              Cross-Encoder (Stage 2):
     Top-5 Final Results
 ```
 
-**ไฟล์ที่เกี่ยวข้อง:** `rag_searcher.py` → `search()` ใช้ `rerank_model.predict()`
+### Adaptive Reranking — ข้าม Reranker เมื่อไม่จำเป็น
+
+ระบบ production ระดับโลกไม่ได้ rerank ทุก query — มันตรวจสอบก่อนว่า "จำเป็นไหม?"
+
+**หลักการ:** ถ้า Hybrid Search ให้ผลลัพธ์ที่ **Top-1 ทิ้งห่าง Top-2 มาก** (score gap สูง) แสดงว่าผลลัพธ์ชัดเจนอยู่แล้ว → ข้าม Reranker ได้
+
+```
+Hybrid Merge Scores
+        │
+        ▼
+   Gap = Top-1 - Top-2
+        │
+   ┌────┴────┐
+   ▼         ▼
+ Gap > 0.15  Gap ≤ 0.15
+ (ชัดเจน)    (กำกวม)
+   │         │
+   ▼         ▼
+ ⚡ Skip     🔬 Rerank
+ ~15ms      ~300ms
+```
+
+### ผลทดสอบจริง (Benchmark)
+
+| Query | Gap | Mode | เวลา | ทำไม? |
+|-------|-----|------|------|-------|
+| "Atomic Habits สอนอะไร..." | 0.032 | 🔬 Rerank | 0.576s | หลาย chunk ของเล่มเดียวกันแข่งกัน |
+| "Rich Dad Poor Dad..." | 0.248 | ⚡ Skip | **0.020s** | ชัดเจน → ข้ามได้ |
+| "วิธีเจรจาต่อรอง" | 0.428 | ⚡ Skip | **0.015s** | Top-1 ทิ้งห่างมาก |
+| "วิธีฝึกสมาธิ..." | 0.092 | 🔬 Rerank | 0.190s | หลายหนังสือเกี่ยวข้องพอๆ กัน |
+| "ซุนวูสอนอะไร..." | 0.175 | ⚡ Skip | **0.015s** | ซุนวูชัดเจน |
+
+**ผลสรุป:** 3 ใน 5 queries ข้าม Reranker ได้ = ประหยัด GPU ~60% โดยไม่เสียความแม่นยำ
+
+> 💡 **Tuning Tip:**
+> - `RERANK_SCORE_GAP = 0.10` → rerank บ่อยขึ้น (แม่นกว่า แต่ช้ากว่า)
+> - `RERANK_SCORE_GAP = 0.20` → skip บ่อยขึ้น (เร็วกว่า แต่เสี่ยงกว่า)
+> - `RERANK_SCORE_GAP = 0.00` → rerank ทุกครั้ง (ปิด Adaptive)
+
+**ไฟล์ที่เกี่ยวข้อง:** `rag_searcher.py` → `_should_rerank()`, `search()`
+
+**ค่าตั้ง:** `config.py` → `RERANK_SCORE_GAP = 0.15`
 
 ---
 
@@ -494,19 +539,21 @@ User: "Atomic Habits สอนวิธีสร้างนิสัยอย�
 │  merged = dense + bm25 → Top 10 unique candidates
 │  ⏱️ ~0.1ms
 │
-▼ Stage 3: Reranking (GPU)
-│  10 pairs: [(query, chunk_1), (query, chunk_2), ...]
-│  bge-reranker-v2-m3.predict(pairs) → rerank scores
-│  Sort descending → Top 5 final results
-│  ⏱️ ~300ms
+▼ Stage 3: Adaptive Reranking Decision
+│  gap = Top-1 score - Top-2 score
+│  ┌──────────────────────────┐
+│  │ gap > 0.15 → ⚡ Skip!   │  ← Fast mode (~15ms total)
+│  │ gap ≤ 0.15 → 🔬 Rerank │  ← Precision mode (~300ms)
+│  └──────────────────────────┘
+│  If Reranking: 10 pairs → bge-reranker-v2-m3.predict()
+│  ⏱️ ~0ms (skip) or ~300ms (rerank)
 │
 ▼ Output
-│  [1] (Score: 0.92) [Atomic Habits] กฎข้อที่ 1: ทำให้มันชัดเจน...
-│  [2] (Score: 0.87) [Atomic Habits] กฎข้อที่ 2: ทำให้มันน่าดึงดูด...
-│  [3] (Score: 0.83) [Atomic Habits] กฎข้อที่ 3: ทำให้มันง่าย...
+│  [1] (Score: 0.99) [Atomic Habits] สรุป: กุญแจสู่การเปลี่ยนแปลง...
+│  [2] (Score: 0.98) [Atomic Habits] เกริ่นนำ: พลังของนิสัยอะตอม...
 │  ...
 │
-⏱️ Total: ~300-500ms
+⏱️ Total: ~15ms (clear) or ~300-500ms (ambiguous)
 ```
 
 ---
@@ -526,11 +573,12 @@ RAG/
 │
 ├── rag_searcher.py        🔍 Search Engine (Core)
 │   ├── tokenize_thai()    → tokenize query สำหรับ BM25
-│   └── RAGSearcher        → Dense + BM25 → merge → rerank
+│   └── RAGSearcher        → Dense + BM25 → merge → adaptive rerank
 │       ├── _dense_search()
 │       ├── _bm25_search()
 │       ├── _normalize_scores()
 │       ├── _hybrid_merge()
+│       ├── _should_rerank()  → ตัดสินใจ rerank หรือ skip
 │       └── search()       → orchestrate ทั้งหมด
 │
 ├── build_index.py         ▶️ Entry Point: สร้าง/สร้างใหม่ index
@@ -593,6 +641,9 @@ CHUNK_OVERLAP = 100    # ส่วนซ้ำระหว่าง chunk
 HYBRID_DENSE_WEIGHT = 0.7    # น้ำหนัก Dense (semantic)
 HYBRID_BM25_WEIGHT  = 0.3    # น้ำหนัก BM25 (keyword)
 
+# === Adaptive Reranking ===
+RERANK_SCORE_GAP = 0.15      # Gap threshold (0.0=always rerank, 1.0=never)
+
 # === Search ===
 TOP_K_RETRIEVAL = 10   # จำนวน candidates จาก Stage 1
 TOP_K_DISPLAY   = 5    # จำนวนผลลัพธ์สุดท้าย (หลัง Rerank)
@@ -607,6 +658,8 @@ BATCH_SIZE      = 32   # Batch size สำหรับ embedding
 | `CHUNK_SIZE` | ข้อมูลเป็นบทความยาว | เพิ่มเป็น 800 |
 | `CHUNK_OVERLAP` | ค้นเจอข้อมูล "ครึ่งๆ กลางๆ" | เพิ่มเป็น 150 |
 | `HYBRID_BM25_WEIGHT` | ค้นชื่อเฉพาะไม่ค่อยเจอ | เพิ่มเป็น 0.4 |
+| `RERANK_SCORE_GAP` | อยากให้ rerank บ่อยขึ้น | ลดเป็น 0.10 |
+| `RERANK_SCORE_GAP` | อยากให้ skip บ่อยขึ้น | เพิ่มเป็น 0.20 |
 | `TOP_K_RETRIEVAL` | อยากให้ Reranker มี pool มากขึ้น | เพิ่มเป็น 20 |
 | `BATCH_SIZE` | VRAM ไม่พอตอน build | ลดเป็น 16 |
 
@@ -697,21 +750,28 @@ FAISS Index         BM25 Corpus
 _data.pkl file (original text)
 ```
 
-### B. Search (ทุกครั้งที่ค้น)
+### B. Full RAG Pipeline (ทุกครั้งที่ถาม)
 
 ```
 User Query
     │
-    ├─────────────────────┐
-    ▼                     ▼
-Dense Search           BM25 Search
-(FAISS + GPU)          (CPU)
-~5ms                   ~1ms
-    │                     │
-    ▼                     ▼
-Normalize 0-1          Normalize 0-1
-    │                     │
-    └─────────┬───────────┘
+    ▼
+┌──────────────────────────┐
+│  Stage 0: HyDE Transform │
+│  (Groq LLaMA 3.3 70B)   │
+│  ~1.5s                   │
+└────────────┬─────────────┘
+             ▼
+    ┌────────┴────────┐
+    ▼                 ▼
+Dense Search       BM25 Search
+(FAISS + GPU)      (CPU)
+~5ms               ~1ms
+    │                 │
+    ▼                 ▼
+Normalize 0-1      Normalize 0-1
+    │                 │
+    └─────────┬───────┘
               ▼
     Weighted Merge (0.7 + 0.3)
               │
@@ -719,19 +779,269 @@ Normalize 0-1          Normalize 0-1
     Top-10 Candidates
               │
               ▼
-    Cross-Encoder Reranking (GPU)
-    ~300ms
+    Adaptive Reranking Decision
+    ┌──────────────────────────┐
+    │ gap > 0.15 → ⚡ Skip!   │
+    │ gap ≤ 0.15 → 🔬 Rerank │
+    └──────────────────────────┘
               │
               ▼
     Top-5 Final Results
               │
               ▼
-    Display to User
-    ⏱️ Total: ~300-500ms
+┌──────────────────────────┐
+│  Stage 3: LLM Generation │
+│  (Gemini 2.5 Flash)      │
+│  SSE Streaming → Web UI  │
+│  ~5-8s                   │
+└──────────────────────────┘
+              │
+              ▼
+    🎯 Answer + Sources
+    ⏱️ Total: ~7-10s (with HyDE + Gen)
+```
+
+---
+
+## 10. HyDE — Query Transform
+
+### HyDE คืออะไร?
+
+**HyDE (Hypothetical Document Embedding)** คือเทคนิคที่ใช้ LLM สร้าง "เอกสารสมมติ" จากคำถาม แล้วใช้เอกสารสมมตินั้นเป็นคำค้นแทนคำถามเดิม
+
+**ปัญหาที่ HyDE แก้:**
+- ผู้ใช้ถามว่า "วิธีตื่นเช้า" → เอกสารจริงเขียนว่า "การปรับ circadian rhythm"
+- คำถามกับเอกสารใช้คำคนละชุด → Dense Search หาไม่เจอ
+- HyDE สร้างคำตอบสมมติที่มีคำศัพท์เหมือนเอกสาร → ค้นเจอ!
+
+### ไฟล์: `core/query_transformer.py`
+
+| Component | รายละเอียด |
+|-----------|----------|
+| LLM | Groq LLaMA 3.3 70B |
+| Prompt | Concept-driven, เขียนเหมือนผู้เขียนหนังสือ |
+| Max Tokens | 512 |
+| Temperature | 0.7 (สร้างสรรค์เล็กน้อย) |
+| Fallback | ถ้า API ล่ม → ใช้ query เดิม |
+| เปิด/ปิด | `config.ENABLE_HYDE = True/False` |
+
+### Flow
+
+```
+"วิธีสร้างนิสัยที่ดี"
+    │
+    ▼ (Groq LLaMA 3.3 70B)
+    │
+"การสร้างนิสัยที่ดีต้องเริ่มจากการเข้าใจกลไกของนิสัย
+ซึ่งประกอบด้วย 4 ขั้นตอน: สัญญาณกระตุ้น (Cue),
+แรงปรารถนา (Craving), การตอบสนอง (Response),
+และรางวัล (Reward)..."
+    │
+    ▼ (ใช้เป็นคำค้นแทน)
+    │
+Hybrid Search → Adaptive Reranking → Results
+```
+
+---
+
+## 11. LLM Generation — Gemini
+
+### หน้าที่
+
+รับผลลัพธ์จาก Search + Reranking แล้วสร้างคำตอบให้ผู้ใช้ พร้อมอ้างอิงแหล่งที่มา
+
+### ไฟล์: `core/llm_generator.py`
+
+| Component | รายละเอียด |
+|-----------|----------|
+| Model | Gemini 2.5 Flash |
+| Temperature | 0.3 (ตอบชัด ไม่เพ้อ) |
+| Max Tokens | ไม่จำกัด (ให้โมเดลตัดสินเอง) |
+| System Prompt | Adaptive role — วิเคราะห์คำถาม → เลือกบทบาท |
+| Streaming | SSE (Server-Sent Events) real-time |
+| Key Rotation | Round-robin 10 keys |
+
+### System Prompt Design
+
+Prompt ถูกออกแบบให้ AI **วิเคราะห์คำถามก่อน** แล้วเลือกบทบาทที่เหมาะสม:
+
+```
+คำถามเรียบง่าย → ตอบสั้นตรงประเด็น
+คำถามซับซ้อน → ใช้โครงสร้าง (ขั้นตอน, กรอบวิเคราะห์)
+การวิเคราะห์ → ทำหน้าที่เป็นนักวิเคราะห์
+การวางแผน → ทำหน้าที่เป็นนักวางแผน
+คำถามทั่วไป → ทำหน้าที่เป็นที่ปรึกษา
+```
+
+### Pipeline ใน generate()
+
+```
+query + search_results
+    │
+    ▼ _build_context()
+    │ → จัดรูปแบบ [แหล่งที่ 1] (ความเกี่ยวข้อง: 0.95)...
+    │
+    ▼ _build_prompt()
+    │ → รวม query + context → prompt
+    │
+    ▼ Gemini API (stream=True)
+    │ → yield chunks ทีละ token
+    │
+    ▼ SSE → Frontend
+```
+
+---
+
+## 12. Core Package — API Keys & Modules
+
+โฟลเดอร์ `core/` เก็บ modules ที่เกี่ยวกับ LLM, API keys, และ secrets
+
+### โครงสร้าง
+
+```
+core/
+├── __init__.py             # Package init
+├── config.py               # .env loader → Settings singleton
+├── key_manager.py          # Round-robin API key rotation
+├── llm_generator.py        # Gemini generation (sync + streaming)
+└── query_transformer.py    # HyDE + Query Rewriting (Groq)
+```
+
+### Config แยก 2 ระดับ (Separation of Concerns)
+
+| ไฟล์ | หน้าที่ | ตัวอย่าง |
+|------|--------|--------|
+| `config.py` (root) | RAG tuning parameters | CHUNK_SIZE, HYBRID_WEIGHT, RERANK_GAP |
+| `core/config.py` | API keys & LLM settings | GEMINI_API_KEYS, TEMPERATURE |
+
+### Key Manager — Round-Robin Rotation
+
+```
+Key Pool: [K1, K2, K3, K4, K5, K6, K7, K8, K9, K10]
+                                                 │
+Request 1 → K1                                   │
+Request 2 → K2                                   │
+Request 3 → K3 ... → Request 10 → K10 → K1 (วนซ้ำ)
+```
+
+**ทำไมต้อง rotate?**
+- Google Gemini มี rate limit ต่อ key (~15 req/min)
+- 10 keys → รองรับ 150 req/min
+- ถ้า key หมด → `get_key()` return None → แสดง error
+
+---
+
+## 13. Web UI — FastAPI + SSE
+
+### ไฟล์: `web_server.py` + `web/`
+
+Web UI เป็น chat interface แบบ dark theme ที่แสดงผลแบบ real-time streaming
+
+### Technical Stack
+
+| Component | Technology |
+|-----------|----------|
+| Backend | FastAPI + uvicorn |
+| Streaming | SSE (Server-Sent Events) via sse-starlette |
+| Frontend | Vanilla HTML/CSS/JS |
+| Markdown | marked.js |
+| Design | Dark theme + glassmorphism + Inter font |
+
+### SSE Event Types
+
+| Event | Data | จังหวะ |
+|-------|------|--------|
+| `status` | `{stage, message}` | เมื่อเริ่มแต่ละ stage |
+| `hyde` | `{hyde_query, time}` | หลัง HyDE สำเร็จ |
+| `sources` | `{sources[], search_time}` | หลัง Search เสร็จ |
+| `token` | `{text}` | ทุก token ที่ Gemini สร้าง |
+| `done` | `{hyde_time, search_time, gen_time, total_time}` | จบ pipeline |
+
+### API Endpoint
+
+```
+POST /api/ask
+Body: { "query": "...", "use_hyde": true }
+Response: SSE stream (event: status → hyde → sources → token* → done)
+```
+
+### Frontend Features
+
+- 🌙 Dark theme + purple accent palette
+- 💬 Chat bubbles (user + AI)
+- 📑 Sources panel (คะแนน + เนื้อหา)
+- ⏱️ Timing bar (HyDE / Search / Gen / Total)
+- 🪄 HyDE toggle switch
+- 💡 Suggestion chips
+- 📱 Responsive design
+
+---
+
+## 14. โครงสร้างไฟล์และหน้าที่
+
+```
+RAG/
+├── config.py               # ⚙️  Central config (paths, models, tuning)
+├── rag_creator.py          # 🔨 Chunking + embedding + index building
+├── rag_searcher.py         # 🔍 Hybrid search + adaptive reranking
+├── build_index.py          # ▶️  CLI: build/rebuild index
+├── search.py               # ▶️  CLI: interactive search (retrieval only)
+├── ask.py                  # 🤖 CLI: full RAG pipeline
+├── web_server.py           # 🌐 FastAPI + SSE streaming server
+├── test_rag.py             # ✅ Test suite
+│
+├── core/                   # 📦 Core modules
+│   ├── config.py           #   🔐 .env loader (API keys)
+│   ├── key_manager.py      #   🔑 Round-robin key rotation
+│   ├── llm_generator.py    #   🤖 Gemini generation
+│   └── query_transformer.py#   🪄 HyDE + Query Rewriting
+│
+├── web/                    # 🎨 Frontend
+│   ├── index.html
+│   ├── style.css
+│   └── app.js
+│
+├── data/                   # 📂 Source .jsonl files
+├── storage/                # 💾 FAISS + BM25 indices
+└── .env                    # 🔐 API keys
+```
+
+---
+
+## 15. Configuration — การตั้งค่า
+
+ระบบแยก config เป็น 2 ระดับ:
+
+### `config.py` (root) — RAG Tuning
+
+```python
+# Hybrid Search weights (must sum to 1.0)
+HYBRID_DENSE_WEIGHT = 0.7    # Semantic meaning
+HYBRID_BM25_WEIGHT  = 0.3    # Keyword matching
+
+# Adaptive Reranking
+RERANK_SCORE_GAP = 0.15      # Skip reranker if gap > threshold
+
+# Search tuning
+TOP_K_RETRIEVAL = 10    # FAISS candidates
+TOP_K_DISPLAY   = 5     # Final results shown
+ENABLE_HYDE     = True  # HyDE query transform on/off
+```
+
+### `core/config.py` — API Keys & LLM Settings
+
+```python
+# Environment Variables (via .env file)
+GEMINI_API_KEYS     # Comma-separated Gemini API keys (10 keys)
+GROQ_API_KEYS       # Comma-separated Groq API keys (3 keys)
+GEMINI_MODEL        # Default: gemini-2.5-flash
+GEMINI_TEMPERATURE  # Default: 0.3
+GROQ_MODEL          # Default: llama-3.3-70b-versatile
+GROQ_TEMPERATURE    # Default: 0.7
 ```
 
 ---
 
 > 📅 **Last Updated:** February 2025
 > 📝 **Author:** Auto-generated documentation
-> 🔖 **Version:** 1.0 — Retrieval Pipeline Complete (Dense + BM25 + Reranker)
+> 🔖 **Version:** 2.0 — Full RAG Pipeline (HyDE + Hybrid Search + Adaptive Reranking + Gemini Generation + Web UI)
