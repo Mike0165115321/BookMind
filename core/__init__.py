@@ -1,4 +1,5 @@
 """
 Core package — shared modules for the RAG system.
-Contains: config settings, key management, and LLM generation.
+Contains: config settings, key management, LLM generation,
+          query transformation, and agentic RAG pipeline.
 """

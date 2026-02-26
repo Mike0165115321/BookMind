@@ -3,7 +3,9 @@
    ═══════════════════════════════════════════════ */
 
 /* ── Reset & Base ──────────────────────────── */
-*, *::before, *::after {
+*,
+*::before,
+*::after {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
@@ -34,7 +36,8 @@
     --font-mono: 'JetBrains Mono', monospace;
 }
 
-html, body {
+html,
+body {
     height: 100%;
     font-family: var(--font);
     background: var(--bg-primary);
@@ -159,8 +162,15 @@ html, body {
 }
 
 @keyframes float {
-    0%, 100% { transform: translateY(0); }
-    50% { transform: translateY(-8px); }
+
+    0%,
+    100% {
+        transform: translateY(0);
+    }
+
+    50% {
+        transform: translateY(-8px);
+    }
 }
 
 .welcome-card h2 {
@@ -210,13 +220,25 @@ html, body {
 }
 
 @keyframes slideUp {
-    from { opacity: 0; transform: translateY(12px); }
-    to { opacity: 1; transform: translateY(0); }
+    from {
+        opacity: 0;
+        transform: translateY(12px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 @keyframes fadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
 }
 
 .message-user {
@@ -273,9 +295,17 @@ html, body {
     color: var(--text-primary);
 }
 
-.message-ai .message-content h1 { font-size: 18px; }
-.message-ai .message-content h2 { font-size: 16px; }
-.message-ai .message-content h3 { font-size: 15px; }
+.message-ai .message-content h1 {
+    font-size: 18px;
+}
+
+.message-ai .message-content h2 {
+    font-size: 16px;
+}
+
+.message-ai .message-content h3 {
+    font-size: 15px;
+}
 
 .message-ai .message-content p {
     margin-bottom: 8px;
@@ -352,8 +382,17 @@ html, body {
 }
 
 @keyframes pulse {
-    0%, 100% { opacity: 1; transform: scale(1); }
-    50% { opacity: 0.5; transform: scale(0.8); }
+
+    0%,
+    100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+
+    50% {
+        opacity: 0.5;
+        transform: scale(0.8);
+    }
 }
 
 /* ── Timing Bar ────────────────────────────── */
@@ -393,7 +432,60 @@ html, body {
 .input-controls {
     display: flex;
     justify-content: flex-end;
+    gap: 16px;
     margin-bottom: 8px;
+}
+
+/* ── Agentic Steps (Multi-hop Progress) ───── */
+.agentic-steps {
+    background: var(--bg-primary);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 12px 16px;
+    margin-bottom: 12px;
+    font-size: 13px;
+    animation: fadeIn 0.3s ease;
+}
+
+.agentic-step {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 6px 0;
+    border-bottom: 1px solid var(--border);
+    animation: slideUp 0.3s ease;
+}
+
+.agentic-step:last-child {
+    border-bottom: none;
+}
+
+.step-icon {
+    flex-shrink: 0;
+    font-size: 14px;
+}
+
+.step-text {
+    color: var(--text-secondary);
+    line-height: 1.5;
+    flex: 1;
+}
+
+.step-text em {
+    color: var(--accent-light);
+    font-style: normal;
+    font-weight: 500;
+}
+
+.step-badge {
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 10px;
+    background: rgba(16, 185, 129, 0.1);
+    color: var(--green);
+    font-family: var(--font-mono);
+    white-space: nowrap;
+    flex-shrink: 0;
 }
 
 .input-row {
@@ -493,12 +585,12 @@ textarea:focus {
     transition: var(--transition);
 }
 
-.hyde-toggle input:checked + .toggle-slider {
+.hyde-toggle input:checked+.toggle-slider {
     background: var(--accent-glow);
     border-color: var(--accent);
 }
 
-.hyde-toggle input:checked + .toggle-slider::after {
+.hyde-toggle input:checked+.toggle-slider::after {
     background: var(--accent);
     transform: translateX(16px);
 }

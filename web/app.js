@@ -2,10 +2,11 @@
  * RAG Knowledge Base — Frontend Application
  *
  * Handles:
- *   - SSE streaming from /api/ask
+ *   - SSE streaming from /api/ask (Classic + Agentic modes)
  *   - Real-time markdown rendering
  *   - Source panel updates
  *   - Chat history management
+ *   - Multi-hop search progress display (Agentic mode)
  */
 
 // ──────────────────────────────────────────────
@@ -16,6 +17,7 @@ const queryInput = document.getElementById('queryInput');
 const sendBtn = document.getElementById('sendBtn');
 const sourcesList = document.getElementById('sourcesList');
 const hydeToggle = document.getElementById('hydeToggle');
+const agenticToggle = document.getElementById('agenticToggle');
 
 let isGenerating = false;
 
@@ -71,8 +73,12 @@ async function sendMessage() {
     queryInput.value = '';
     queryInput.style.height = 'auto';
 
+    // Determine mode
+    const isAgentic = agenticToggle && agenticToggle.checked;
+    const mode = isAgentic ? 'agentic' : 'classic';
+
     // Add AI response area
-    const { messageEl, contentEl, statusEl } = addAIMessage();
+    const { messageEl, contentEl, statusEl } = addAIMessage(isAgentic);
 
     // Start SSE
     try {
@@ -82,6 +88,7 @@ async function sendMessage() {
             body: JSON.stringify({
                 query: query,
                 use_hyde: hydeToggle.checked,
+                mode: mode,
             }),
         });
 
@@ -105,7 +112,7 @@ async function sendMessage() {
                     var currentEvent = line.slice(6).trim();
                 } else if (line.startsWith('data:') && currentEvent) {
                     const data = JSON.parse(line.slice(5).trim());
-                    handleEvent(currentEvent, data, contentEl, statusEl, messageEl);
+                    handleEvent(currentEvent, data, contentEl, statusEl, messageEl, isAgentic);
 
                     if (currentEvent === 'token') {
                         fullText += data.text;
@@ -130,7 +137,7 @@ async function sendMessage() {
 // ──────────────────────────────────────────────
 // Handle SSE events
 // ──────────────────────────────────────────────
-function handleEvent(event, data, contentEl, statusEl, messageEl) {
+function handleEvent(event, data, contentEl, statusEl, messageEl, isAgentic) {
     switch (event) {
         case 'status':
             statusEl.querySelector('.status-text').textContent = data.message;
@@ -141,10 +148,86 @@ function handleEvent(event, data, contentEl, statusEl, messageEl) {
                 `🪄 HyDE สำเร็จ (${data.time}s)`;
             break;
 
+        // ────── Agentic Events ──────
+        case 'decompose':
+            if (isAgentic && data.query_type === 'complex') {
+                const stepsEl = messageEl.querySelector('.agentic-steps');
+                if (stepsEl) {
+                    const stepDiv = document.createElement('div');
+                    stepDiv.className = 'agentic-step';
+                    stepDiv.innerHTML = `
+                        <span class="step-icon">🔀</span>
+                        <span class="step-text">แยกเป็น ${data.sub_queries.length} คำถามย่อย: 
+                            ${data.sub_queries.map(q => `<em>"${escapeHtml(q)}"</em>`).join(', ')}
+                        </span>
+                    `;
+                    stepsEl.appendChild(stepDiv);
+                    scrollToBottom();
+                }
+            }
+            statusEl.querySelector('.status-text').textContent = data.message || `🔀 แยกเป็น ${data.sub_queries?.length || 0} sub-queries`;
+            break;
+
+        case 'search_iteration':
+            if (isAgentic) {
+                const stepsEl = messageEl.querySelector('.agentic-steps');
+                if (stepsEl) {
+                    const stepDiv = document.createElement('div');
+                    stepDiv.className = 'agentic-step';
+                    stepDiv.innerHTML = `
+                        <span class="step-icon">🔍</span>
+                        <span class="step-text">รอบ ${data.iteration}: ค้นหา <em>"${escapeHtml(data.query)}"</em></span>
+                    `;
+                    stepsEl.appendChild(stepDiv);
+                    scrollToBottom();
+                }
+            }
+            break;
+
+        case 'search_done':
+            if (isAgentic) {
+                const stepsEl = messageEl.querySelector('.agentic-steps');
+                if (stepsEl) {
+                    const lastStep = stepsEl.lastElementChild;
+                    if (lastStep) {
+                        const badge = document.createElement('span');
+                        badge.className = 'step-badge';
+                        badge.textContent = `+${data.new_chunks} chunks`;
+                        lastStep.appendChild(badge);
+                    }
+                }
+            }
+            break;
+
+        case 'evaluate':
+            if (isAgentic) {
+                const stepsEl = messageEl.querySelector('.agentic-steps');
+                if (stepsEl) {
+                    const stepDiv = document.createElement('div');
+                    stepDiv.className = 'agentic-step';
+                    const icon = data.is_sufficient ? '✅' : '🔄';
+                    const confidencePct = Math.round(data.confidence * 100);
+                    let text = `${icon} ประเมิน: confidence ${confidencePct}%`;
+                    if (!data.is_sufficient && data.missing_aspects?.length) {
+                        text += ` — ขาด: ${data.missing_aspects.join(', ')}`;
+                    }
+                    stepDiv.innerHTML = `
+                        <span class="step-icon">${icon}</span>
+                        <span class="step-text">${text}</span>
+                    `;
+                    stepsEl.appendChild(stepDiv);
+                    scrollToBottom();
+                }
+            }
+            break;
+
+        // ────── Shared Events ──────
         case 'sources':
             renderSources(data.sources, data.search_time);
-            statusEl.querySelector('.status-text').textContent =
-                `🔍 พบ ${data.sources.length} แหล่ง (${data.search_time}s)`;
+            if (!isAgentic) {
+                statusEl.querySelector('.status-text').textContent =
+                    `🔍 พบ ${data.sources.length} แหล่ง (${data.search_time}s)`;
+            }
             break;
 
         case 'done':
@@ -155,9 +238,16 @@ function handleEvent(event, data, contentEl, statusEl, messageEl) {
             const timingEl = document.createElement('div');
             timingEl.className = 'timing-bar';
             let timingParts = [];
-            if (data.hyde_time > 0) timingParts.push(`<span>🪄 ${data.hyde_time}s</span>`);
-            timingParts.push(`<span>🔍 ${data.search_time}s</span>`);
-            timingParts.push(`<span>🤖 ${data.gen_time}s</span>`);
+
+            if (data.mode === 'agentic') {
+                timingParts.push(`<span>🧠 Agentic</span>`);
+                if (data.iterations) timingParts.push(`<span>🔄 ${data.iterations} rounds</span>`);
+                if (data.total_chunks) timingParts.push(`<span>📚 ${data.total_chunks} chunks</span>`);
+            } else {
+                if (data.hyde_time > 0) timingParts.push(`<span>🪄 ${data.hyde_time}s</span>`);
+                timingParts.push(`<span>🔍 ${data.search_time}s</span>`);
+                timingParts.push(`<span>🤖 ${data.gen_time}s</span>`);
+            }
             timingParts.push(`<span>⏱️ ${data.total_time}s</span>`);
             timingEl.innerHTML = timingParts.join('');
             messageEl.appendChild(timingEl);
@@ -200,7 +290,7 @@ function addUserMessage(text) {
     scrollToBottom();
 }
 
-function addAIMessage() {
+function addAIMessage(isAgentic = false) {
     const messageEl = document.createElement('div');
     messageEl.className = 'message message-ai';
 
@@ -214,6 +304,14 @@ function addAIMessage() {
     messageEl.innerHTML = '<div class="ai-avatar">🤖</div>';
     const body = document.createElement('div');
     body.style.cssText = 'flex: 1; min-width: 0;';
+
+    // Add agentic steps container if in agentic mode
+    if (isAgentic) {
+        const agenticSteps = document.createElement('div');
+        agenticSteps.className = 'agentic-steps';
+        body.appendChild(agenticSteps);
+    }
+
     body.appendChild(statusEl);
     body.appendChild(contentEl);
     messageEl.appendChild(body);

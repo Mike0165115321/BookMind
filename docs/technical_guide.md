@@ -1,8 +1,8 @@
 # 📘 เอกสารอธิบายระบบ RAG อย่างละเอียด
-# RAG System — Technical Documentation (v2.0)
+# RAG System — Technical Documentation (v3.0)
 
 > เอกสารฉบับนี้อธิบายการทำงานของระบบ RAG (Retrieval-Augmented Generation) **แบบ End-to-End** ทุกขั้นตอน
-> ครอบคลุมตั้งแต่ Query Transform (HyDE), Hybrid Search, Adaptive Reranking, LLM Generation (Gemini), จนถึง Web UI
+> ครอบคลุมตั้งแต่ Query Transform (HyDE), Hybrid Search, Adaptive Reranking, LLM Generation (Gemini), **🧠 Agentic RAG** (Query Decomposition + Multi-hop Retrieval), จนถึง Web UI
 
 ---
 
@@ -26,6 +26,7 @@
 16. [ทรัพยากรที่ใช้ (VRAM/RAM)](#16-ทรัพยากรที่ใช้-vramram)
 17. [ข้อมูลโมเดล AI](#17-ข้อมูลโมเดล-ai)
 18. [Flow Chart — ภาพรวมทุกขั้นตอน](#18-flow-chart--ภาพรวมทุกขั้นตอน)
+19. [🧠 Agentic RAG — Multi-hop Retrieval](#19-agentic-rag--multi-hop-retrieval)
 
 ---
 
@@ -38,8 +39,9 @@
 1. **Retrieval (ค้นหา):** ค้นหาข้อมูลที่เกี่ยวข้องจากฐานความรู้
 2. **Generation (สร้างคำตอบ):** ส่งข้อมูลที่ค้นเจอให้ LLM สรุปเป็นคำตอบ
 
-> ✅ **ระบบปัจจุบัน** ครบทั้ง Retrieval + Generation (Full RAG Pipeline v2.0)
-> HyDE (Groq) → Hybrid Search → Adaptive Reranking → Gemini Generation → Web UI
+> ✅ **ระบบปัจจุบัน** ครบทั้ง Retrieval + Generation + Agentic RAG (v3.0)
+> Classic: HyDE → Hybrid Search → Adaptive Reranking → Gemini Generation → Web UI
+> 🧠 Agentic: Decompose → Multi-hop Search → Evaluate → Balanced Select → Generate
 
 ### ทำไมต้อง RAG?
 
@@ -1044,7 +1046,11 @@ core/
 ├── config.py               # .env loader → Settings singleton
 ├── key_manager.py          # Round-robin API key rotation
 ├── llm_generator.py        # Gemini generation (sync + streaming)
-└── query_transformer.py    # HyDE + Query Rewriting (Groq)
+├── query_transformer.py    # HyDE + Query Rewriting (Groq)
+├── query_decomposer.py     # 🧠 Query Decomposition (simple/complex → sub-queries)
+├── evaluator.py            # 📊 Sufficiency Evaluator + follow-up queries
+├── agent_memory.py         # 💾 Working Memory (dedup + balanced chunk selection)
+└── agentic_controller.py   # 🔄 Agentic Orchestrator (decompose → search → eval → loop)
 ```
 
 ### Config แยก 2 ระดับ (Separation of Concerns)
@@ -1165,20 +1171,25 @@ Response: SSE stream (event: status → hyde → sources → token* → done)
 
 ```
 RAG/
-├── config.py               # ⚙️  Central config (paths, models, tuning)
+├── config.py               # ⚙️  Central config (paths, models, tuning, agentic)
 ├── rag_creator.py          # 🔨 Chunking + embedding + index building
 ├── rag_searcher.py         # 🔍 Hybrid search + adaptive reranking
 ├── build_index.py          # ▶️  CLI: build/rebuild index
-├── search.py               # ▶️  CLI: interactive search (retrieval only)
-├── ask.py                  # 🤖 CLI: full RAG pipeline
-├── web_server.py           # 🌐 FastAPI + SSE streaming server
-├── test_rag.py             # ✅ Test suite
+├── search.py               # ▶️  CLI: interactive search
+├── ask.py                  # 🤖 CLI: full RAG pipeline (Classic + Agentic)
+├── web_server.py           # 🌐 FastAPI + SSE (Classic + Agentic)
+├── test_rag.py             # ✅ Test suite (search)
+├── test_agentic.py         # 🧪 Test suite (agentic pipeline)
 │
 ├── core/                   # 📦 Core modules
 │   ├── config.py           #   🔐 .env loader (API keys)
 │   ├── key_manager.py      #   🔑 Round-robin key rotation
 │   ├── llm_generator.py    #   🤖 Gemini generation
-│   └── query_transformer.py#   🪄 HyDE + Query Rewriting
+│   ├── query_transformer.py#   🪄 HyDE + Query Rewriting
+│   ├── query_decomposer.py #   🧠 Query Decomposition
+│   ├── evaluator.py        #   📊 Sufficiency Evaluator
+│   ├── agent_memory.py     #   💾 Working Memory + Balanced Selection
+│   └── agentic_controller.py#  🔄 Agentic Orchestrator
 │
 ├── web/                    # 🎨 Frontend
 │   ├── index.html
@@ -1210,6 +1221,11 @@ RERANK_SCORE_GAP = 0.15      # Skip reranker if gap > threshold
 TOP_K_RETRIEVAL = 10    # FAISS candidates
 TOP_K_DISPLAY   = 5     # Final results shown
 ENABLE_HYDE     = True  # HyDE query transform on/off
+
+# 🧠 Agentic RAG
+AGENTIC_MAX_ITERATIONS = 3        # Max search loop iterations
+AGENTIC_SUFFICIENCY_THRESHOLD = 0.7  # Stop when confidence ≥ 0.7
+AGENTIC_MAX_CHUNKS = 20           # Max chunks across all iterations
 ```
 
 ### `core/config.py` — API Keys & LLM Settings
@@ -1226,6 +1242,184 @@ GROQ_TEMPERATURE    # Default: 0.7
 
 ---
 
+## 19. 🧠 Agentic RAG — Multi-hop Retrieval
+
+### Agentic RAG คืออะไร?
+
+**Agentic RAG** คือการยกระดับ RAG ให้ AI ทำหน้าที่เหมือน **"นักวิจัย"** — ไม่ใช่แค่ค้นหาครั้งเดียวแล้วตอบ แต่สามารถ:
+
+1. **วิเคราะห์คำถาม** → แยกเป็นคำถามย่อยที่ชัดเจน
+2. **ค้นหาหลายรอบ** → แต่ละคำถามย่อยค้นแยกกัน
+3. **ประเมินผล** → ข้อมูลที่ได้ครบหรือยัง?
+4. **ค้นเพิ่ม** → ถ้ายังไม่ครบ สร้าง follow-up queries แล้วค้นอีก
+5. **สังเคราะห์** → รวมข้อมูลจากทุกแหล่งสร้างคำตอบข้ามเล่ม
+
+> 🎓 **ที่มาทางวิชาการ:** Agentic RAG เป็นแนวคิดจาก "AI Agents" — ระบบที่มีความสามารถในการวางแผน ใช้เครื่องมือ และตัดสินใจซ้ำ แทนที่จะทำงานแบบ single-shot ซึ่งเป็นข้อจำกัดหลักของ RAG ดั้งเดิม
+
+### ทำไมต้อง Agentic?
+
+| สถานการณ์ | Classic RAG | 🧠 Agentic RAG |
+|-----------|-------------|----------------|
+| "Atomic Habits สอนอะไร" | ✅ ค้นเจอเลย | ✅ bypass ไป classic |
+| "เปรียบเทียบ Rich Dad กับ Psychology of Money" | ❌ ได้แค่เล่มเดียว | ✅ ค้นทั้ง 2 เล่ม + เปรียบเทียบ |
+| "ใช้ Thinking Fast and Slow กับ Psychology of Money รอดจากวิกฤต" | ❌ ข้อมูลไม่ครบ | ✅ 3 sub-queries, 15 balanced chunks |
+
+### 🎓 Deep Dive: Query Decomposition คืออะไร?
+
+**Query Decomposition** คือกระบวนการแยกคำถามซับซ้อนเป็นคำถามย่อยที่ค้นหาได้ง่ายขึ้น:
+
+```
+คำถามเดิม: "เปรียบเทียบมุมมองเรื่องความสำเร็จระหว่าง Atomic Habits กับ 7 Habits"
+                                    │
+                                    ▼  QueryDecomposer (Groq LLM)
+                        ┌───────────┴───────────┐
+                        ▼                       ▼
+            Sub-query 1:                Sub-query 2:
+            "Atomic Habits              "7 Habits มุมมอง
+             มุมมองเรื่อง                เรื่องความสำเร็จ
+             ความสำเร็จ"                 และนิสัย"
+```
+
+LLM จำแนกคำถามเป็น 2 ประเภท:
+- **simple:** คำถามเกี่ยวกับหนังสือเดียว/หัวข้อเดียว → bypass ไป Classic pipeline
+- **complex:** คำถามเปรียบเทียบ/ข้ามเล่ม → เข้า Agentic loop
+
+**ไฟล์:** `core/query_decomposer.py` — ใช้ Groq LLaMA 3.3 70B
+
+### Architecture — 4 Core Modules
+
+```
+┌──────────────────────────────────────────────────────────┐
+│                  AgenticController                        │
+│               (Orchestrator หลัก)                         │
+│                                                          │
+│  ┌─────────────────┐    ┌───────────────────────┐        │
+│  │ QueryDecomposer │    │     Evaluator         │        │
+│  │ (Groq LLM)      │    │     (Groq LLM)       │        │
+│  │ แตก sub-queries  │    │ ประเมิน sufficiency   │        │
+│  └────────┬────────┘    └──────────┬────────────┘        │
+│           │                        │                      │
+│           ▼                        ▼                      │
+│  ┌─────────────────────────────────────────────┐         │
+│  │            AgentMemory                       │         │
+│  │  • dedup chunks (fingerprint)                │         │
+│  │  • track search history                      │         │
+│  │  • balanced chunk selection (round-robin)     │         │
+│  └─────────────────────────────────────────────┘         │
+│                        │                                  │
+│                        ▼                                  │
+│              [RAGSearcher + HyDE]  ← ใช้เป็น "tool"       │
+│              ไม่แก้โค้ดเดิมเลย                             │
+└──────────────────────────────────────────────────────────┘
+```
+
+| Module | ไฟล์ | หน้าที่ |
+|--------|------|--------|
+| **QueryDecomposer** | `core/query_decomposer.py` | จำแนก simple/complex + แตก sub-queries |
+| **Evaluator** | `core/evaluator.py` | ประเมินว่าข้อมูลครบหรือยัง + สร้าง follow-up |
+| **AgentMemory** | `core/agent_memory.py` | Working memory + dedup + balanced selection |
+| **AgenticController** | `core/agentic_controller.py` | Orchestrator ควบคุม loop ทั้งหมด |
+
+> 🎓 **หลักการออกแบบ:** ระบบ Agentic ใช้หลัก **Separation of Concerns** — แต่ละ module มี interface ชัดเจน และ **ไม่แก้ไขโค้ดเดิม** (RAGSearcher, HyDE, LLM Generator) เลยแม้แต่บรรทัดเดียว RAGSearcher กลายเป็น "tool" ที่ Agent เรียกใช้
+
+### 🎓 Deep Dive: Balanced Chunk Selection
+
+ปัญหาสำคัญของ Multi-hop Search คือ **Source Imbalance** — เมื่อค้นจากหลายเล่ม ถ้าเรียง chunks ตาม score ทั้งหมด → chunks จากเล่มที่ score สูงกว่าจะ "ครอง" ที่ทั้งหมด:
+
+```
+ปัญหา (Global Top-K):
+  Atomic Habits: 0.95, 0.93, 0.90, 0.88, 0.85  ← ได้หมด!
+  7 Habits:      0.82, 0.80, 0.78, 0.76, 0.74  ← ไม่ได้เลย!
+  
+  Top-5 = [0.95, 0.93, 0.90, 0.88, 0.85]  ← จากเล่มเดียว!
+
+แก้ไข (Balanced Round-Robin):
+  Round 1: Atomic [0.95], 7 Habits [0.82]
+  Round 2: Atomic [0.93], 7 Habits [0.80]
+  Round 3: Atomic [0.90]
+  
+  Top-5 = [0.95, 0.82, 0.93, 0.80, 0.90]  ← จากทั้ง 2 เล่ม!
+```
+
+**วิธีการ:** `AgentMemory.get_balanced_chunks()` จัดกลุ่ม chunks ตาม `source_query` แล้ว round-robin เลือกสลับจากแต่ละกลุ่ม
+
+**จำนวน chunks ที่ส่ง:** สำหรับ complex queries ระบบจะ scale ขึ้น: `TOP_K_DISPLAY × จำนวน sub-queries`
+
+**ไฟล์:** `core/agent_memory.py` → `get_balanced_chunks()`
+
+### Pipeline Flow แบบเต็ม
+
+```
+User Query: "เปรียบเทียบ Atomic Habits กับ 7 Habits"
+│
+▼  [Step 1] QueryDecomposer (Groq: ~1.5s)
+│  → type: "complex"
+│  → sub_queries: ["Atomic Habits มุมมอง...", "7 Habits มุมมอง..."]
+│
+▼  [Step 2] Iteration 1/3
+│  ├── Sub-query 1: HyDE → Search → 10 results → AgentMemory (+10 new)
+│  └── Sub-query 2: HyDE → Search → 10 results → AgentMemory (+10 new)
+│  └── Total: 20 unique chunks
+│
+▼  [Step 3] Evaluate (Groq: ~1.5s)
+│  → confidence: 0.85 ≥ 0.7 → ✅ เพียงพอ!
+│  (ถ้า < 0.7 → สร้าง follow-up queries → วน Iteration 2)
+│
+▼  [Step 4] Balanced Selection
+│  → 5 chunks จาก Atomic Habits + 5 chunks จาก 7 Habits = 10 chunks
+│
+▼  [Step 5] Generate (Gemini: ~8-15s)
+│  → สังเคราะห์คำตอบเปรียบเทียบข้ามเล่ม + อ้างอิงแหล่งที่มา
+│
+🎯 Answer + Sources
+⏱️ Total: ~15-25s
+```
+
+### Configuration — การปรับค่า Agentic
+
+| Parameter | ค่า | ปรับเมื่อ |
+|-----------|-----|----------|
+| `AGENTIC_MAX_ITERATIONS` | 3 | เพิ่มถ้าอยากให้ค้นลึกขึ้น (ช้าลง + API มากขึ้น) |
+| `AGENTIC_SUFFICIENCY_THRESHOLD` | 0.7 | ลดถ้าอยากให้ค้นเพิ่มบ่อยขึ้น |
+| `AGENTIC_MAX_CHUNKS` | 20 | เพิ่มถ้ามี context window เหลือเยอะ |
+
+> 💡 **Tuning Tip:** ถ้าคำถาม complex ตอบได้ไม่ครบ → ลด threshold เป็น 0.5 เพื่อให้ค้นเพิ่ม หรือเพิ่ม MAX_ITERATIONS เป็น 5
+
+### SSE Events (Web UI)
+
+| Event | Data | จังหวะ |
+|-------|------|--------|
+| `agentic_decompose` | `{query_type, sub_queries}` | หลัง decompose |
+| `agentic_search` | `{iteration, query, new_chunks}` | หลังค้นแต่ละ sub-query |
+| `agentic_evaluate` | `{confidence, missing}` | หลัง evaluate |
+| `sources` | `{sources[]}` | ก่อนสร้างคำตอบ |
+| `token` | `{text}` | ระหว่าง stream คำตอบ |
+
+### วิธีใช้งาน
+
+**CLI:**
+```bash
+# Agentic mode
+python3 ask.py --agentic "เปรียบเทียบ Rich Dad กับ Psychology of Money"
+
+# Interactive + Agentic
+python3 ask.py --agentic
+
+# Agentic ไม่ใช้ HyDE
+python3 ask.py --agentic --no-hyde "..."
+```
+
+**Web UI:** เปิด toggle 🧠 **Agentic** ที่ช่อง input → ดู progress ของแต่ละ iteration แบบ real-time
+
+**Test:**
+```bash
+python3 test_agentic.py              # Unit tests (ไม่ใช้ API)
+python3 test_agentic.py --live       # Live tests (ใช้ API)
+python3 test_agentic.py --query "…"  # Single agentic query
+```
+
+---
+
 > 📅 **Last Updated:** February 2025
 > 📝 **Author:** Auto-generated documentation
-> 🔖 **Version:** 2.0 — Full RAG Pipeline (HyDE + Hybrid Search + Adaptive Reranking + Gemini Generation + Web UI)
+> 🔖 **Version:** 3.0 — Full RAG Pipeline + 🧠 Agentic RAG (HyDE + Hybrid Search + Adaptive Reranking + Gemini Generation + Query Decomposition + Multi-hop Retrieval + Web UI)

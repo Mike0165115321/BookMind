@@ -1,9 +1,9 @@
 # 📚 RAG System — Full Pipeline Knowledge Base
 
-ระบบค้นหาและตอบคำถามจากหนังสืออัจฉริยะ ผสม **HyDE Query Transform** + **Hybrid Search** + **Adaptive Reranking** + **Gemini LLM Generation** พร้อม **Web UI** แบบ real-time streaming
+ระบบค้นหาและตอบคำถามจากหนังสืออัจฉริยะ ผสม **HyDE Query Transform** + **Hybrid Search** + **Adaptive Reranking** + **Gemini LLM Generation** + **🧠 Agentic RAG** (Query Decomposition & Multi-hop Retrieval) พร้อม **Web UI** แบบ real-time streaming
 
-> **สถานะ:** ✅ Full RAG Pipeline สมบูรณ์ (v2.0)  
-> **Version:** 2.0 — HyDE + Hybrid Search + Adaptive Reranking + Gemini Generation + Web UI
+> **สถานะ:** ✅ Full RAG Pipeline + Agentic RAG สมบูรณ์ (v3.0)  
+> **Version:** 3.0 — Agentic RAG + HyDE + Hybrid Search + Adaptive Reranking + Gemini Generation + Web UI
 
 📘 **[เอกสารเทคนิคฉบับเต็ม (Technical Guide)](docs/technical_guide.md)**
 
@@ -23,6 +23,12 @@
 ---
 
 ## 🏗️ Architecture
+
+ระบบรองรับ 2 โหมด:
+- **Classic:** HyDE → Search → Generate (single-shot)
+- **🧠 Agentic:** Decompose → Multi-hop Search → Evaluate → Generate
+
+### Classic Pipeline
 
 ```
 User Query
@@ -46,38 +52,60 @@ User Query
       └───────┬───────┘
               ▼
      ┌────────────────┐
-     │  Score Merge   │
-     │  (Normalize +  │
-     │   Weighted)    │
-     └───────┬────────┘
-             ▼
-     ┌────────────────┐
      │ Adaptive Gate  │
      │ gap > 0.15 → ⚡│
      │ gap ≤ 0.15 → 🔬│
      └───┬───────┬────┘
     ⚡Skip   🔬Rerank
-    ~15ms    ~300ms
          └───┬───┘
              ▼
+   Gemini LLM Generation
+   SSE Streaming → Web UI
+```
+
+### 🧠 Agentic Pipeline (Multi-hop)
+
+```
+User Query (complex, multi-book)
+    │
+    ▼
 ┌──────────────────────────┐
-│  Stage 3: LLM Generation │
-│  (Gemini 2.5 Flash)      │
-│  สร้างคำตอบจากเนื้อหาจริง  │
-│  SSE Streaming → Web UI   │
+│  Decompose (Groq LLM)   │ "เปรียบเทียบ A กับ B"
+│  → sub-query 1: "A"     │  → แยกเป็น 2 คำถามย่อย
+│  → sub-query 2: "B"     │
+└────────────┬─────────────┘
+             ▼
+    ┌────────┴─────────┐
+    ▼                  ▼
+ [HyDE → Search 1]  [HyDE → Search 2]
+    │                  │
+    └────────┬─────────┘
+             ▼
+┌──────────────────────────┐
+│  Evaluate (Groq LLM)    │ ข้อมูลครบหรือยัง?
+│  confidence ≥ 0.7 → ✅   │ → ครบ! สร้างคำตอบ
+│  confidence < 0.7 → 🔄   │ → ยังไม่ครบ ค้นเพิ่ม
+└────────────┬─────────────┘
+             ▼
+┌──────────────────────────┐
+│  Balanced Chunk Select   │ round-robin จากทุก source
+│  → Gemini Generation     │ สังเคราะห์ข้ามเล่ม
 └──────────────────────────┘
 ```
 
-### Full Pipeline
+### Pipeline Stages
 
 | Stage | Method | หน้าที่ | ทำงานบน |
-|-------|--------|---------| --------|
+|-------|--------|---------|---------|
 | **0** | HyDE (Groq LLaMA) | สร้างเอกสารสมมติเพื่อปรับปรุงคำค้น | Cloud API |
 | **1a** | Dense (FAISS) | จับ "ความหมาย" — คำต่างกันแต่หมายถึงเรื่องเดียวกัน | GPU |
 | **1b** | BM25 (Sparse) | จับ "คำตรงกัน" — ชื่อคน, ชื่อหนังสือ, ศัพท์เฉพาะ | CPU |
 | **2** | Score Merge | รวม Dense (70%) + BM25 (30%) แล้ว normalize | CPU |
 | **3** | Adaptive Reranker | ⚡ Skip ถ้าชัด / 🔬 Rerank ถ้ากำกวม (gap ≤ 0.15) | GPU |
 | **4** | Gemini Generation | สร้างคำตอบ SSE streaming จากเนื้อหาที่ค้นเจอ | Cloud API |
+| **A1** | Query Decomposer | 🧠 แตกคำถามซับซ้อนเป็น sub-queries (Agentic) | Cloud API |
+| **A2** | Evaluator | 📊 ประเมินว่าข้อมูลครบหรือยัง + สร้าง follow-up (Agentic) | Cloud API |
+| **A3** | Balanced Selection | ⚖️ round-robin เลือก chunks จากทุก source (Agentic) | CPU |
 
 ---
 
@@ -113,26 +141,31 @@ User Query
 
 ```
 RAG/
-├── config.py               # ⚙️  Central config (paths, models, tuning)
+├── config.py               # ⚙️  Central config (paths, models, tuning, agentic)
 ├── rag_creator.py          # 🔨 Chunking + embedding + index building
 ├── rag_searcher.py         # 🔍 Hybrid search + adaptive reranking
 ├── build_index.py          # ▶️  CLI: build/rebuild index
 ├── search.py               # ▶️  CLI: interactive search (retrieval only)
-├── ask.py                  # 🤖 CLI: full RAG pipeline (HyDE → Search → Generate)
-├── web_server.py           # 🌐 FastAPI + SSE streaming server
-├── test_rag.py             # ✅ Test suite
+├── ask.py                  # 🤖 CLI: full RAG pipeline (Classic + Agentic)
+├── web_server.py           # 🌐 FastAPI + SSE streaming (Classic + Agentic)
+├── test_rag.py             # ✅ Test suite (search)
+├── test_agentic.py         # 🧪 Test suite (agentic pipeline)
 │
-├── core/                   # 📦 Core modules (secrets, LLM, query transform)
+├── core/                   # 📦 Core modules
 │   ├── __init__.py
 │   ├── config.py           #   🔐 .env loader (API keys, model settings)
 │   ├── key_manager.py      #   🔑 Round-robin API key rotation
 │   ├── llm_generator.py    #   🤖 Gemini LLM generation (sync + streaming)
-│   └── query_transformer.py#   🪄 HyDE + Query Rewriting (via Groq)
+│   ├── query_transformer.py#   🪄 HyDE + Query Rewriting (via Groq)
+│   ├── query_decomposer.py #   🧠 Query Decomposition (simple/complex → sub-queries)
+│   ├── evaluator.py        #   📊 Sufficiency Evaluator (confidence + follow-up)
+│   ├── agent_memory.py     #   💾 Working Memory (dedup + balanced selection)
+│   └── agentic_controller.py#  🔄 Agentic Orchestrator (decompose → search → eval → loop)
 │
 ├── web/                    # 🎨 Frontend (Dark theme chat UI)
-│   ├── index.html          #   📄 Main page
-│   ├── style.css           #   🎨 Dark theme + glassmorphism
-│   └── app.js              #   ⚡ SSE streaming + markdown rendering
+│   ├── index.html          #   📄 Main page (HyDE + Agentic toggles)
+│   ├── style.css           #   🎨 Dark theme + agentic steps UI
+│   └── app.js              #   ⚡ SSE streaming + agentic event handling
 │
 ├── data/                   # 📂 Source .jsonl files (120 files, 3,002+ entries)
 ├── storage/                # 💾 FAISS + BM25 + text data indices
@@ -153,7 +186,7 @@ python3 build_index.py            # สร้าง index ครั้งแร�
 python3 build_index.py --force    # สร้างใหม่ (ลบของเก่า)
 ```
 
-### 2. CLI — Full RAG Pipeline
+### 2. CLI — Classic Pipeline
 ```bash
 python3 ask.py                         # Interactive mode
 python3 ask.py "สามก๊กสอนอะไร"          # Single question
@@ -161,16 +194,26 @@ python3 ask.py --no-hyde "วิธีสร้างนิสัย" # ไม�
 python3 ask.py --no-stream "Growth Mindset" # ไม่ streaming
 ```
 
-### 3. Web UI
+### 3. CLI — 🧠 Agentic Pipeline (Multi-hop)
+```bash
+python3 ask.py --agentic "เปรียบเทียบ Rich Dad กับ Psychology of Money"
+python3 ask.py --agentic "วิเคราะห์ความเชื่อมโยงระหว่าง Atomic Habits กับ 7 Habits"
+python3 ask.py --agentic --no-hyde ".."  # Agentic ไม่ใช้ HyDE
+```
+
+### 4. Web UI
 ```bash
 python3 web_server.py
 # → Open http://localhost:8000
+# → เปิด toggle 🧠 Agentic สำหรับคำถามซับซ้อน
 ```
 
-### 4. Search Only (ไม่ต่อ LLM)
+### 5. Search Only (ไม่ต่อ LLM)
 ```bash
 python3 search.py
 python3 test_rag.py
+python3 test_agentic.py             # Unit tests (agentic)
+python3 test_agentic.py --live      # Live API tests
 ```
 
 ---
@@ -191,6 +234,11 @@ RERANK_SCORE_GAP = 0.15      # Skip reranker if gap > threshold
 TOP_K_RETRIEVAL = 10    # FAISS candidates
 TOP_K_DISPLAY   = 5     # Final results shown
 ENABLE_HYDE     = True  # HyDE query transform on/off
+
+# 🧠 Agentic RAG
+AGENTIC_MAX_ITERATIONS = 3        # Max search loop iterations
+AGENTIC_SUFFICIENCY_THRESHOLD = 0.7  # Stop searching when confidence ≥ 0.7
+AGENTIC_MAX_CHUNKS = 20           # Max total chunks across all iterations
 ```
 
 ### LLM & API Keys — `core/config.py` + `.env`
@@ -224,15 +272,18 @@ GROQ_TEMPERATURE=0.7
 
 ## 📊 Performance
 
-| Metric | Value |
-|--------|-------|
-| Total Chunks | 5,738 |
-| Embedding Dimension | 1,024 |
-| Search Latency (skip rerank) | ~15ms |
-| Search Latency (with rerank) | ~300ms |
-| HyDE Transform | ~1.5s |
-| LLM Generation | ~5-8s |
-| **Total (HyDE + Search + Gen)** | **~7-10s** |
+| Metric | Classic | 🧠 Agentic (complex) |
+|--------|---------|---------------------|
+| Total Chunks | 5,738 | 5,738 |
+| Embedding Dimension | 1,024 | 1,024 |
+| Search Latency (skip rerank) | ~15ms | ~15ms × N sub-queries |
+| Search Latency (with rerank) | ~300ms | ~300ms × N sub-queries |
+| HyDE Transform | ~1.5s | ~1.5s × N sub-queries |
+| LLM Generation | ~5-8s | ~8-15s (more context) |
+| API Calls | 2 (HyDE + Gen) | 4-8 (Decompose + HyDE×N + Eval + Gen) |
+| **Total** | **~7-10s** | **~15-30s** |
+
+> 💡 คำถาม simple ใน Agentic mode จะ bypass ไป Classic pipeline → ไม่มี overhead เพิ่ม
 
 ---
 
@@ -247,8 +298,12 @@ GROQ_TEMPERATURE=0.7
 - [x] Query Transform (HyDE via Groq LLaMA 3.3 70B)
 - [x] Web UI (FastAPI + SSE + Dark Theme)
 - [x] API Key Rotation (round-robin)
+- [x] 🧠 Agentic RAG — Query Decomposition + Multi-hop Retrieval
+- [x] 📊 Sufficiency Evaluator — ประเมินข้อมูลครบหรือยัง
+- [x] ⚖️ Balanced Chunk Selection — round-robin จากทุก source
 - [ ] Conversation Memory (multi-turn)
 - [ ] Document Upload (PDF/TXT via Web UI)
+- [ ] Multi-Agent System (specialized agents per domain)
 
 ---
 
@@ -263,6 +318,7 @@ GROQ_TEMPERATURE=0.7
 | Reranker | CrossEncoder (bge-reranker-v2-m3) |
 | LLM Generation | Gemini 2.5 Flash (via google-genai) |
 | Query Transform | Groq LLaMA 3.3 70B |
+| 🧠 Agentic RAG | Query Decomposition + Multi-hop + Evaluator |
 | API Key Management | Round-robin rotation (KeyManager) |
 | Web Backend | FastAPI + uvicorn |
 | Web Frontend | Vanilla HTML/CSS/JS + SSE |

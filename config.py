@@ -52,6 +52,13 @@ TOP_K_DISPLAY = 5      # Number of final results shown to user (after Reranking)
 BATCH_SIZE = 32        # Embedding batch size (adjust based on VRAM)
 
 # ──────────────────────────────────────────────
+# Agentic RAG
+# ──────────────────────────────────────────────
+AGENTIC_MAX_ITERATIONS = 3        # Max search loop iterations (prevents infinite loops)
+AGENTIC_SUFFICIENCY_THRESHOLD = 0.7  # Confidence threshold to stop searching (0.0-1.0)
+AGENTIC_MAX_CHUNKS = 20           # Max total chunks to gather across all iterations
+
+# ──────────────────────────────────────────────
 # LLM Generation (Gemini) & Query Transform (Groq)
 # ──────────────────────────────────────────────
 # Model settings are in core/config.py (loaded from .env)
