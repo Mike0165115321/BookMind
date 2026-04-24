@@ -114,6 +114,36 @@ body {
     border-color: rgba(139, 92, 246, 0.2);
 }
 
+.badge-gemini { background: rgba(59, 130, 246, 0.1); color: var(--blue); border-color: rgba(59, 130, 246, 0.3); }
+.badge-llama { background: rgba(245, 158, 11, 0.1); color: var(--orange); border-color: rgba(245, 158, 11, 0.3); }
+.badge-search { background: rgba(16, 185, 129, 0.1); color: var(--green); border-color: rgba(16, 185, 129, 0.3); }
+.badge-db { background: rgba(139, 92, 246, 0.1); color: var(--accent-light); border-color: rgba(139, 92, 246, 0.3); }
+
+/* ── Manage Knowledge Base Button (Prominent Style) ── */
+.btn-manage {
+    padding: 10px 24px !important;
+    font-size: 14px !important;
+    background: linear-gradient(135deg, var(--accent) 0%, #6d28d9 100%) !important;
+    color: white !important;
+    border: none !important;
+    border-radius: 25px !important;
+    box-shadow: 0 4px 15px rgba(139, 92, 246, 0.4) !important;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) !important;
+    text-decoration: none;
+}
+
+.btn-manage:hover {
+    transform: scale(1.08) translateY(-2px);
+    box-shadow: 0 8px 25px rgba(139, 92, 246, 0.6) !important;
+    filter: brightness(1.1);
+}
+
+.btn-manage i {
+    margin-right: 8px;
+    font-size: 16px;
+}
+
 /* ── Main Layout ───────────────────────────── */
 .main-layout {
     display: flex;
