@@ -13,13 +13,14 @@ Standard format for each line in JSONL:
 }
 """
 
-def convert_json_to_jsonl(input_path, output_dir):
+def convert_json_to_jsonl(input_path, output_dir, limit=None):
     """
     Reads a JSON file (or a directory of JSON files) and converts them to JSONL.
     
     Args:
         input_path: Path to a .json file or a directory containing .json files.
         output_dir: Directory where the .jsonl files will be saved.
+        limit: Maximum number of files to process.
     """
     input_path = Path(input_path)
     output_dir = Path(output_dir)
@@ -32,7 +33,9 @@ def convert_json_to_jsonl(input_path, output_dir):
     if input_path.is_file():
         files = [input_path]
     elif input_path.is_dir():
-        files = list(input_path.glob("*.json"))
+        files = sorted(list(input_path.glob("*.json")))
+        if limit:
+            files = files[:limit]
     else:
         print(f"❌ Path not found: {input_path}")
         return
@@ -69,9 +72,10 @@ def main():
     parser = argparse.ArgumentParser(description="Convert JSON to BookMind JSONL format")
     parser.add_argument("input", help="Input JSON file or directory")
     parser.add_argument("--output", default="data", help="Output directory (default: data)")
+    parser.add_argument("--limit", type=int, default=None, help="Limit the number of files to process")
     
     args = parser.parse_args()
-    convert_json_to_jsonl(args.input, args.output)
+    convert_json_to_jsonl(args.input, args.output, limit=args.limit)
 
 if __name__ == "__main__":
     main()
