@@ -170,8 +170,14 @@ class RAGSearcher:
             print(f"   🔬 Reranking (gap={gap:.3f} ≤ {config.RERANK_SCORE_GAP}) → Cross-Encoder")
             sentence_pairs = [[query, doc] for doc in retrieved_docs]
             rerank_scores = self.rerank_model.predict(sentence_pairs)
-            return sorted(zip(retrieved_docs, rerank_scores), key=lambda x: x[1], reverse=True)
+            results = sorted(zip(retrieved_docs, rerank_scores), key=lambda x: x[1], reverse=True)
+            
+            # Filter by threshold
+            return [r for r in results if r[1] >= config.RELEVANCE_THRESHOLD]
         else:
             # Clear winner → skip Reranker, use hybrid scores directly
             print(f"   ⚡ Skip Reranker (gap={gap:.3f} > {config.RERANK_SCORE_GAP}) → Fast mode")
-            return list(zip(retrieved_docs, merged_scores_list))
+            results = list(zip(retrieved_docs, merged_scores_list))
+            
+            # Filter by threshold
+            return [r for r in results if r[1] >= config.RELEVANCE_THRESHOLD]

@@ -49,6 +49,7 @@ RERANK_SCORE_GAP = 0.15    # Gap threshold (0.0 = always rerank, 1.0 = never rer
 # ──────────────────────────────────────────────
 TOP_K_RETRIEVAL = 10   # Number of candidates from FAISS (Bi-Encoder stage)
 TOP_K_DISPLAY = 5      # Number of final results shown to user (after Reranking)
+RELEVANCE_THRESHOLD = 0.15  # Minimum score to be considered relevant (0.0 - 1.0)
 BATCH_SIZE = 32        # Embedding batch size (adjust based on VRAM)
 
 # ──────────────────────────────────────────────
