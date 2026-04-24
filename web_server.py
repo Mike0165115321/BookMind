@@ -16,30 +16,42 @@ import json
 import time
 import asyncio
 import uvicorn
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, UploadFile, File, Form, BackgroundTasks
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, JSONResponse
 from sse_starlette.sse import EventSourceResponse
+import os
+import shutil
 
 import config
 from rag_searcher import RAGSearcher
 from core.llm_generator import generate
 from core.query_transformer import hyde_transform
 from core.agentic_controller import AgenticController
+from core.database import db
+from core.ingestor import Ingestor
 
 # ──────────────────────────────────────────────
 # Initialize
 # ──────────────────────────────────────────────
 app = FastAPI(title="RAG Knowledge Base", version="2.0")
 
-# Load RAG index once at startup
+# Global instances
 searcher = None
+ingestor = None
 
 @app.on_event("startup")
 async def startup():
-    global searcher
+    global searcher, ingestor
     searcher = RAGSearcher()
     searcher.load_index()
+    
+    # Initialize ingestor with the running searcher
+    ingestor = Ingestor(searcher_instance=searcher)
+    
+    # Ensure upload directory exists
+    os.makedirs(os.path.join(config.DATA_DIR, "uploads"), exist_ok=True)
+    
     print("🚀 RAG Web Server ready! (Classic + Agentic modes)")
 
 
@@ -70,6 +82,96 @@ async def ask_endpoint(request: Request):
         return EventSourceResponse(_agentic_event_generator(query, use_hyde))
     else:
         return EventSourceResponse(_classic_event_generator(query, use_hyde))
+
+
+# ──────────────────────────────────────────────
+# Admin API — Ingestion Management
+# ──────────────────────────────────────────────
+@app.get("/api/documents")
+async def get_documents():
+    """List all documents and their ingestion status."""
+    docs = db.get_all_documents()
+    return {"documents": docs}
+
+
+@app.post("/api/upload")
+async def upload_document(
+    background_tasks: BackgroundTasks,
+    file: UploadFile = File(...),
+    book_title: str = Form(None),
+    category: str = Form(None)
+):
+    """Upload a document file and register it in the database."""
+    try:
+        # Save file to uploads folder
+        upload_dir = os.path.join(config.DATA_DIR, "uploads")
+        file_path = os.path.join(upload_dir, file.filename)
+        
+        with open(file_path, "wb") as buffer:
+            shutil.copyfileobj(file.file, buffer)
+            
+        # Register in DB
+        doc_id = db.add_document(
+            filename=file.filename,
+            book_title=book_title,
+            category=category
+        )
+        
+        # Trigger ingestion in background
+        background_tasks.add_task(
+            ingestor.process_document, 
+            doc_id, 
+            file_path, 
+            book_title, 
+            category
+        )
+        
+        return {
+            "success": True, 
+            "message": f"อัปโหลดไฟล์ {file.filename} เรียบร้อย ระบบกำลังประมวลผลเบื้องหลัง",
+            "doc_id": doc_id
+        }
+    except Exception as e:
+        return JSONResponse(
+            status_code=500,
+            content={"success": False, "message": f"Error: {str(e)}"}
+        )
+
+
+@app.post("/api/retry/{doc_id}")
+async def retry_upload(doc_id: int, background_tasks: BackgroundTasks):
+    doc = db.get_document(doc_id)
+    if not doc:
+        return {"success": False, "message": "ไม่พบเอกสาร"}
+    
+    # Reconstruct path from filename
+    upload_dir = os.path.join(config.DATA_DIR, "uploads")
+    file_path = os.path.join(upload_dir, doc['filename'])
+    
+    # Check if file still exists
+    if not os.path.exists(file_path):
+        return {"success": False, "message": "ไม่พบไฟล์ต้นฉบับบน Server"}
+        
+    background_tasks.add_task(
+        ingestor.process_document,
+        doc_id,
+        file_path,
+        doc['book_title'],
+        doc['category']
+    )
+    return {"success": True, "message": "กำลังเริ่มประมวลผลใหม่"}
+
+@app.delete("/api/documents/{doc_id}")
+async def delete_document(doc_id: int):
+    """Delete a document entry from the database."""
+    try:
+        db.delete_document(doc_id)
+        return {"success": True, "message": "ลบข้อมูลสำเร็จ"}
+    except Exception as e:
+        return JSONResponse(
+            status_code=500,
+            content={"success": False, "message": f"Error: {str(e)}"}
+        )
 
 
 # ──────────────────────────────────────────────
@@ -270,6 +372,11 @@ async def _agentic_event_generator(query: str, use_hyde: bool):
 @app.get("/")
 async def serve_index():
     return FileResponse("web/index.html")
+
+
+@app.get("/admin")
+async def serve_admin():
+    return FileResponse("web/admin.html")
 
 app.mount("/static", StaticFiles(directory="web"), name="static")
 

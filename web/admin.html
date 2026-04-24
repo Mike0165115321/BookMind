@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Knowledge Admin | BookMind</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600&family=Noto+Sans+Thai:wght@300;400;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-gradient: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
+            --accent-glow: 0 0 20px rgba(168, 85, 247, 0.4);
+            --bg-dark: #0f172a;
+            --card-bg: rgba(30, 41, 59, 0.7);
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --text-main: #f8fafc;
+            --text-dim: #94a3b8;
+            --success: #10b981;
+            --error: #ef4444;
+            --warning: #f59e0b;
+            --processing: #3b82f6;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Outfit', 'Noto Sans Thai', sans-serif;
+        }
+
+        body {
+            background: var(--bg-dark);
+            background-image: 
+                radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.15) 0px, transparent 50%),
+                radial-gradient(at 100% 100%, rgba(168, 85, 247, 0.15) 0px, transparent 50%);
+            color: var(--text-main);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* Navbar */
+        nav {
+            padding: 1.5rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid var(--glass-border);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            background: rgba(15, 23, 42, 0.8);
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: 700;
+            background: var(--primary-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .nav-link {
+            color: var(--text-main);
+            text-decoration: none;
+            padding: 0.6rem 1.2rem;
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.05);
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            border: 1px solid var(--glass-border);
+        }
+
+        .nav-link:hover {
+            background: rgba(255, 255, 255, 0.1);
+            transform: translateY(-2px);
+            box-shadow: var(--accent-glow);
+        }
+
+        .container {
+            max-width: 1100px;
+            margin: 3rem auto;
+            padding: 0 2rem;
+        }
+
+        /* Glass Card */
+        .glass-card {
+            background: var(--card-bg);
+            backdrop-filter: blur(12px);
+            border-radius: 24px;
+            border: 1px solid var(--glass-border);
+            padding: 2.5rem;
+            margin-bottom: 2.5rem;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+
+        h2 {
+            font-size: 1.8rem;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        h2 i {
+            color: #a855f7;
+        }
+
+        /* Form Styling */
+        .upload-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+            margin-top: 2rem;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 0.6rem;
+            color: var(--text-dim);
+            font-size: 0.9rem;
+        }
+
+        input[type="text"], input[type="file"] {
+            width: 100%;
+            padding: 1rem;
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid var(--glass-border);
+            border-radius: 14px;
+            color: white;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+
+        input[type="text"]:focus {
+            border-color: #a855f7;
+        }
+
+        .btn-prime {
+            background: var(--primary-gradient);
+            color: white;
+            border: none;
+            padding: 1.2rem 2rem;
+            border-radius: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            font-size: 1rem;
+            margin-top: 1rem;
+        }
+
+        .btn-prime:hover {
+            transform: scale(1.02);
+            box-shadow: var(--accent-glow);
+            filter: brightness(1.1);
+        }
+
+        .btn-prime:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        /* Table Styling */
+        .table-container {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+        }
+
+        th {
+            text-align: left;
+            padding: 1.2rem;
+            color: var(--text-dim);
+            font-weight: 400;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            border-bottom: 1px solid var(--glass-border);
+        }
+
+        td {
+            padding: 1.2rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+            font-size: 0.95rem;
+        }
+
+        tr:hover td {
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .badge {
+            padding: 4px 12px;
+            border-radius: 20px;
+            background: rgba(168, 85, 247, 0.1);
+            color: #d8b4fe;
+            font-size: 0.8rem;
+            border: 1px solid rgba(168, 85, 247, 0.2);
+        }
+
+        .status-pill {
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .status-completed { background: rgba(16, 185, 129, 0.15); color: #34d399; }
+        .status-processing { background: rgba(59, 130, 246, 0.15); color: #60a5fa; }
+        .status-error { background: rgba(239, 68, 68, 0.15); color: #f87171; }
+        .status-waiting { background: rgba(148, 163, 184, 0.15); color: #cbd5e1; }
+
+        .actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .action-btn {
+            width: 38px;
+            height: 38px;
+            border-radius: 10px;
+            border: 1px solid var(--glass-border);
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text-dim);
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .action-btn:hover {
+            color: white;
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        .btn-retry:hover { color: var(--processing); border-color: var(--processing); }
+        .btn-delete:hover { color: var(--error); border-color: var(--error); }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+
+        .animate-pulse { animation: pulse 1.5s infinite; }
+    </style>
+</head>
+<body>
+
+    <nav>
+        <div class="logo">
+            <i class="fas fa-brain"></i> BookMind Intelligence
+        </div>
+        <a href="/" class="nav-link">
+            <i class="fas fa-comment-dots"></i> กลับหน้าแชท
+        </a>
+    </nav>
+
+    <div class="container">
+        <div class="glass-card">
+            <h2><i class="fas fa-cloud-upload-alt"></i> Knowledge Ingestion</h2>
+            <p style="color: var(--text-dim); margin-bottom: 2rem;">เพิ่มฐานข้อมูลใหม่ให้ AI ของคุณ (รองรับ PDF, DOCX, TXT, JSON)</p>
+            
+            <form id="uploadForm">
+                <div class="form-group">
+                    <label>เลือกเอกสาร</label>
+                    <input type="file" id="fileInput" accept=".pdf,.docx,.doc,.txt,.jsonl,.json" multiple required>
+                </div>
+                
+                <div class="upload-grid">
+                    <div class="form-group">
+                        <label>ชื่อหนังสือ (เว้นว่างไว้เพื่อใช้ชื่อไฟล์)</label>
+                        <input type="text" id="bookTitle" placeholder="เช่น Atomic Habits">
+                    </div>
+                    <div class="form-group">
+                        <label>หมวดหมู่</label>
+                        <input type="text" id="category" placeholder="เช่น การตลาด, พัฒนาตัวเอง">
+                    </div>
+                </div>
+
+                <button type="submit" id="uploadBtn" class="btn-prime">
+                    <i class="fas fa-plus-circle"></i> เริ่มการสร้างเวกเตอร์
+                </button>
+            </form>
+        </div>
+
+        <div class="glass-card">
+            <h2><i class="fas fa-database"></i> คลังความรู้ปัจจุบัน</h2>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ชื่อไฟล์</th>
+                            <th>ชื่อหนังสือ</th>
+                            <th>หมวดหมู่</th>
+                            <th>สถานะ</th>
+                            <th>Chunks</th>
+                            <th>จัดการ</th>
+                        </tr>
+                    </thead>
+                    <tbody id="docTableBody">
+                        <!-- Documents will load here -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        async function loadDocuments() {
+            try {
+                const response = await fetch('/api/documents');
+                const data = await response.json();
+                const docTableBody = document.getElementById('docTableBody');
+                docTableBody.innerHTML = '';
+                
+                data.documents.forEach(doc => {
+                    const row = document.createElement('tr');
+                    const statusClass = `status-${doc.status.toLowerCase()}`;
+                    const isError = doc.status === 'ERROR';
+                    const isProcessing = doc.status === 'PROCESSING';
+
+                    row.innerHTML = `
+                        <td><i class="far fa-file-alt" style="margin-right:8px; color:#6366f1"></i> ${doc.filename}</td>
+                        <td>${doc.book_title || '-'}</td>
+                        <td><span class="badge">${doc.category || 'General'}</span></td>
+                        <td>
+                            <span class="status-pill ${statusClass} ${isProcessing ? 'animate-pulse' : ''}">
+                                <i class="fas ${getStatusIcon(doc.status)}"></i> ${doc.status}
+                            </span>
+                        </td>
+                        <td style="font-weight:600; color:#a855f7">${doc.total_chunks || 0}</td>
+                        <td class="actions">
+                            ${isError ? `
+                                <button class="action-btn btn-retry" onclick="retryDoc(${doc.id})" title="ลองใหม่">
+                                    <i class="fas fa-sync-alt"></i>
+                                </button>
+                            ` : ''}
+                            <button class="action-btn btn-delete" onclick="deleteDoc(${doc.id})" title="ลบ">
+                                <i class="fas fa-trash-alt"></i>
+                            </button>
+                        </td>
+                    `;
+                    docTableBody.appendChild(row);
+                });
+            } catch (err) {
+                console.error('Failed to load documents:', err);
+            }
+        }
+
+        function getStatusIcon(status) {
+            switch(status) {
+                case 'COMPLETED': return 'fa-check-circle';
+                case 'ERROR': return 'fa-exclamation-circle';
+                case 'PROCESSING': return 'fa-spinner fa-spin';
+                default: return 'fa-clock';
+            }
+        }
+
+        const uploadForm = document.getElementById('uploadForm');
+        uploadForm.onsubmit = async (e) => {
+            e.preventDefault();
+            const fileInput = document.getElementById('fileInput');
+            const files = fileInput.files;
+            const bookTitle = document.getElementById('bookTitle').value;
+            const category = document.getElementById('category').value;
+            
+            const uploadBtn = document.getElementById('uploadBtn');
+            uploadBtn.disabled = true;
+            
+            let successCount = 0;
+            
+            for (let i = 0; i < files.length; i++) {
+                const file = files[i];
+                uploadBtn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> (${i+1}/${files.length}) กำลังประมวลผล ${file.name}`;
+                
+                const formData = new FormData();
+                formData.append('file', file);
+                formData.append('book_title', files.length === 1 && bookTitle ? bookTitle : file.name.split('.')[0]);
+                formData.append('category', category || 'General');
+
+                try {
+                    const response = await fetch('/api/upload', {
+                        method: 'POST',
+                        body: formData
+                    });
+                    const result = await response.json();
+                    if (result.success) successCount++;
+                } catch (err) {
+                    console.error('Upload error:', err);
+                }
+            }
+
+            alert(`อัปโหลดเสร็จสิ้น ${successCount} ไฟล์! AI กำลังเริ่มสร้างเวกเตอร์ในฉากหลัง`);
+            uploadForm.reset();
+            loadDocuments();
+            uploadBtn.disabled = false;
+            uploadBtn.innerHTML = '<i class="fas fa-plus-circle"></i> เริ่มการสร้างเวกเตอร์';
+        };
+
+        async function retryDoc(id) {
+            const btn = event.currentTarget;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+            try {
+                const response = await fetch(`/api/retry/${id}`, { method: 'POST' });
+                const result = await response.json();
+                if (result.success) {
+                    loadDocuments();
+                } else {
+                    alert('Error: ' + result.message);
+                }
+            } catch (err) {
+                alert('Connection error');
+            }
+        }
+
+        async function deleteDoc(id) {
+            if (!confirm('ยืนยันการลบฐานข้อมูลส่วนนี้?')) return;
+            try {
+                await fetch(`/api/documents/${id}`, { method: 'DELETE' });
+                loadDocuments();
+            } catch (err) {
+                alert('ลบไม่สำเร็จ');
+            }
+        }
+
+        // Auto refresh table while processing
+        setInterval(() => {
+            const hasProcessing = document.querySelector('.status-processing');
+            if (hasProcessing) loadDocuments();
+        }, 3000);
+
+        loadDocuments();
+    </script>
+</body>
+</html>

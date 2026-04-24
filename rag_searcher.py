@@ -60,6 +60,17 @@ class RAGSearcher:
         else:
             print(f"⚠️  BM25 data ไม่พบ — ใช้ Dense Search อย่างเดียว ({len(self.data)} chunks)")
 
+    def reload_index(self):
+        """Reload index and data from disk (hot-swap)."""
+        print("🔄 Hot-reloading RAG Index...")
+        try:
+            self.load_index()
+            print(f"✨ Reload สำเร็จ! ปัจจุบันมี {len(self.data)} chunks")
+            return True
+        except Exception as e:
+            print(f"❌ Reload ล้มเหลว: {e}")
+            return False
+
     def _dense_search(self, query, top_k):
         """Stage 1a: FAISS retrieval based on semantic similarity."""
         query_emb = self.embedding_model.encode(

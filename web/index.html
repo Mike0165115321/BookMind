@@ -5,11 +5,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>📚 RAG Knowledge Base</title>
-    <meta name="description" content="ระบบค้นหาความรู้จากหนังสือด้วย AI — Hybrid Search + Adaptive Reranking + Gemini">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link
-        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
-        rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/static/style.css">
 </head>
 
@@ -21,8 +18,13 @@
             <h1>RAG Knowledge Base</h1>
         </div>
         <div class="header-badges">
-            <span class="badge badge-model">🤖 Gemini 2.5 Flash</span>
-            <span class="badge badge-hyde">🪄 HyDE</span>
+            <span class="badge badge-gemini" title="Gemini 2.5 Flash">🤖 Gemini 2.5 Flash</span>
+            <span class="badge badge-llama" title="Llama 3.3 70B">🧠 Llama 3.3 70B</span>
+            <span class="badge badge-search" title="Hybrid Search: Dense + BM25">⚡ Hybrid</span>
+            <span class="badge badge-db" title="Vector DB: FAISS + BGE-M3">📂 FAISS+BGE</span>
+            <a href="/admin" class="badge" style="text-decoration: none; border-color: var(--accent); color: var(--text-primary);">
+                <i class="fas fa-cog"></i> จัดการคลัง
+            </a>
         </div>
     </header>
 
@@ -61,13 +63,9 @@
                         </label>
                     </div>
                     <div class="input-row">
-                        <textarea id="queryInput" placeholder="ถามคำถามเกี่ยวกับหนังสือ..." rows="1"
-                            autofocus></textarea>
+                        <textarea id="queryInput" placeholder="ถามคำถามเกี่ยวกับหนังสือ..." rows="1" autofocus></textarea>
                         <button id="sendBtn" onclick="sendMessage()" title="ส่งคำถาม">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                stroke-width="2">
-                                <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z" />
-                            </svg>
+                            <i class="fas fa-paper-plane"></i>
                         </button>
                     </div>
                 </div>
@@ -88,7 +86,6 @@
         </aside>
     </main>
 
-    <!-- Marked.js for markdown rendering -->
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="/static/app.js"></script>
 </body>
