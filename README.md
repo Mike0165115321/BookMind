@@ -293,6 +293,8 @@ GROQ_TEMPERATURE=0.7
 - [x] Cross-Encoder Reranking (bge-reranker-v2-m3)
 - [x] Intelligent Chunking (500 chars + 100 overlap)
 - [x] Hybrid Search (Dense + BM25)
+- [x] MD & SVG Support
+- [x] Excel, CSV, PPTX & HTML Support (New!)
 - [x] Adaptive Reranking (score-gap based skip/rerank)
 - [x] LLM Generation (Gemini 2.5 Flash)
 - [x] Query Transform (HyDE via Groq LLaMA 3.3 70B)

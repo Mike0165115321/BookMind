@@ -57,6 +57,7 @@
             font-weight: 700;
             background: var(--primary-gradient);
             -webkit-background-clip: text;
+            background-clip: text;
             -webkit-text-fill-color: transparent;
             display: flex;
             align-items: center;
@@ -281,12 +282,12 @@
     <div class="container">
         <div class="glass-card">
             <h2><i class="fas fa-cloud-upload-alt"></i> Knowledge Ingestion</h2>
-            <p style="color: var(--text-dim); margin-bottom: 2rem;">เพิ่มฐานข้อมูลใหม่ให้ AI ของคุณ (รองรับ PDF, DOCX, TXT, JSON)</p>
+            <p style="color: var(--text-dim); margin-bottom: 2rem;">เพิ่มฐานข้อมูลใหม่ให้ AI ของคุณ (รองรับ PDF, DOCX, PPTX, Excel, CSV, HTML, JSON, MD, SVG)</p>
             
             <form id="uploadForm">
                 <div class="form-group">
                     <label>เลือกเอกสาร</label>
-                    <input type="file" id="fileInput" accept=".pdf,.docx,.doc,.txt,.jsonl,.json" multiple required>
+                    <input type="file" id="fileInput" accept=".pdf,.docx,.doc,.pptx,.xlsx,.xls,.csv,.txt,.jsonl,.json,.md,.markdown,.svg,.html,.htm" multiple required>
                 </div>
                 
                 <div class="upload-grid">

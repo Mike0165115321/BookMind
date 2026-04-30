@@ -9,9 +9,10 @@ Responsibilities:
 This module ONLY handles generation. Retrieval is handled by rag_searcher.py.
 """
 from google import genai
-from google.genai import types
+from google.genai import types, errors
 from core.config import settings
 from core.key_manager import gemini_key_manager
+import time
 
 
 # ──────────────────────────────────────────────
@@ -64,8 +65,12 @@ SYSTEM_PROMPT = """
   * เสนอ "integrated model" ที่ผสานจุดแข็งของแต่ละแนวคิด
 
 การอ้างอิง:
-- เมื่ออ้างอิงหนังสือ ให้ใช้รูปแบบ
-"ในหนังสือ [ชื่อหนังสือ] กล่าวถึงว่า..."
+- อ้างอิงแหล่งที่มาให้เป็นธรรมชาติและเนียนไปกับเนื้อหา (Natural Integration)
+- สามารถใช้วิธีการอ้างอิงที่หลากหลาย เช่น:
+  * "ตามแนวคิดใน [ชื่อหนังสือ]..."
+  * "...(ข้อมูลจาก [ชื่อหนังสือ])" 
+  * "หนังสือ [ชื่อหนังสือ] ได้ระบุประเด็นสำคัญว่า..."
+- ห้ามใช้รูปแบบเดิมซ้ำๆ ตลอดทั้งคำตอบเพื่อให้การอ่านลื่นไหล
 - ห้ามสร้างเลขหน้าหรือคำพูดตรง หากไม่มีในข้อมูล
 
 กรณีข้อมูลไม่ครอบคลุมโดยตรง:
@@ -152,30 +157,71 @@ def generate(query: str, search_results: list, stream: bool = False) -> str:
     # 2. Get client with rotated key
     client = _get_client()
 
-    # 3. Generation config (no max_output_tokens — let the model decide)
+    # 3. Generation config
     gen_config = types.GenerateContentConfig(
         system_instruction=SYSTEM_PROMPT,
         temperature=settings.GEMINI_TEMPERATURE,
     )
 
-    # 4. Generate
-    if stream:
-        return _stream_generate(client, prompt, gen_config)
-    else:
-        response = client.models.generate_content(
-            model=settings.GEMINI_MODEL,
-            contents=prompt,
-            config=gen_config,
-        )
-        return response.text
+    # 4. Generate with retry logic
+    max_retries = len(gemini_key_manager.keys) or 1
+    last_error = None
+
+    for attempt in range(max_retries):
+        try:
+            client = _get_client()
+            if stream:
+                # Wrap the generator to catch errors during iteration
+                return _stream_generate_with_retry(query, prompt, gen_config)
+            else:
+                response = client.models.generate_content(
+                    model=settings.GEMINI_MODEL,
+                    contents=prompt,
+                    config=gen_config,
+                )
+                return response.text
+        except (errors.ServerError, errors.ClientError) as e:
+            last_error = e
+            status_code = getattr(e, 'status_code', 'Unknown')
+            print(f"⚠️  LLM Attempt {attempt+1} failed ({status_code}): {e}. Rotating key...")
+            if attempt < max_retries - 1:
+                time.sleep(1) # Short pause before retry
+                continue
+            else:
+                raise last_error
+        except Exception as e:
+            print(f"❌ Unexpected error in generation: {e}")
+            raise e
 
 
-def _stream_generate(client: genai.Client, prompt: str, gen_config):
-    """Generator that yields text chunks for streaming output."""
-    for chunk in client.models.generate_content_stream(
-        model=settings.GEMINI_MODEL,
-        contents=prompt,
-        config=gen_config,
-    ):
-        if chunk.text:
-            yield chunk.text
+def _stream_generate_with_retry(query: str, prompt: str, gen_config):
+    """
+    Wrapper for streaming generation that can handle initial connection errors 
+    by rotating keys and retrying the whole stream.
+    """
+    max_retries = len(gemini_key_manager.keys) or 1
+    
+    for attempt in range(max_retries):
+        try:
+            client = _get_client()
+            for chunk in client.models.generate_content_stream(
+                model=settings.GEMINI_MODEL,
+                contents=prompt,
+                config=gen_config,
+            ):
+                if chunk.text:
+                    yield chunk.text
+            return # Success!
+        except (errors.ServerError, errors.ClientError) as e:
+            status_code = getattr(e, 'status_code', 'Unknown')
+            print(f"⚠️  Stream Attempt {attempt+1} failed ({status_code}). Rotating key...")
+            if attempt < max_retries - 1:
+                time.sleep(1)
+                continue
+            else:
+                yield f"\n\n❌ [AI Error {status_code}]: {str(e)}\nกรุณาลองใหม่อีกครั้ง"
+                return
+        except Exception as e:
+            print(f"❌ Stream error: {e}")
+            yield f"\n\n❌ [Unexpected Error]: {str(e)}"
+            return
