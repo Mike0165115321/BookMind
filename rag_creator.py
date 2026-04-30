@@ -11,6 +11,7 @@ import pickle
 from sentence_transformers import SentenceTransformer
 import config
 from core.document_loader import DocumentLoader
+from core.retrieval.tokenizer import tokenize_thai
 
 class TextChunker:
     """Splits long text into overlapping chunks at natural boundaries."""
@@ -100,7 +101,7 @@ class RAGCreator:
         new_embs = self.create_embeddings(new_docs)
         index.add(new_embs)
         existing_data.extend(new_docs)
-        existing_bm25.extend([self._tokenize(d) for d in new_docs])
+        existing_bm25.extend([tokenize_thai(d) for d in new_docs])
         
         # Save
         faiss.write_index(index, index_path)
@@ -123,7 +124,7 @@ class RAGCreator:
         index = faiss.IndexFlatIP(embeddings.shape[1])
         index.add(embeddings)
         
-        tokenized_corpus = [self._tokenize(d) for d in self.data]
+        tokenized_corpus = [tokenize_thai(d) for d in self.data]
         
         os.makedirs(config.STORAGE_DIR, exist_ok=True)
         faiss.write_index(index, os.path.join(config.STORAGE_DIR, f"{config.INDEX_NAME}.faiss"))

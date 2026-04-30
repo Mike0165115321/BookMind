@@ -21,6 +21,7 @@ from dataclasses import dataclass, field
 from groq import Groq
 from core.config import settings
 from core.key_manager import groq_key_manager
+from core.prompts.prompt_registry import registry
 
 
 # ──────────────────────────────────────────────
@@ -38,29 +39,7 @@ class DecompositionResult:
 # ──────────────────────────────────────────────
 # Decomposition Prompt
 # ──────────────────────────────────────────────
-DECOMPOSE_SYSTEM_PROMPT = """คุณเป็น AI ที่วิเคราะห์คำถามเพื่อวางแผนการค้นหาข้อมูลจากหนังสือ
-
-ภารกิจ: วิเคราะห์ว่าคำถามนี้ต้องค้นข้อมูลกี่ส่วน แล้วแยกเป็น sub-queries
-
-กฎ:
-1. ถ้าคำถามง่าย (ถามเรื่องเดียว, เล่มเดียว) → query_type = "simple", sub_queries = [คำถามเดิม]
-2. ถ้าคำถามซับซ้อน (เปรียบเทียบ, หลายเล่ม, หลายแนวคิด) → query_type = "complex", แยกเป็น sub_queries
-3. sub_queries แต่ละอันต้องค้นหาได้ด้วยตัวเอง (self-contained)
-4. อย่าแยกมากเกินไป — ส่วนใหญ่ 2-4 sub-queries เพียงพอ
-
-ตัวอย่าง:
-- "Atomic Habits สอนอะไร" → simple, ["Atomic Habits สอนอะไร"]
-- "เปรียบเทียบ Rich Dad กับ Psychology of Money เรื่องการลงทุน"
-  → complex, ["หลักการลงทุน Rich Dad Poor Dad", "หลักการลงทุน Psychology of Money"]
-- "ทำไม Steve Jobs ประสบความสำเร็จ วิเคราะห์จากมุม Outliers และ Good to Great"
-  → complex, ["Steve Jobs ปัจจัยความสำเร็จ ชีวประวัติ", "Outliers ปัจจัยที่ทำให้คนสำเร็จ", "Good to Great บริษัทที่เปลี่ยนจากดีเป็นยิ่งใหญ่"]
-
-ตอบเป็น JSON เท่านั้น:
-{
-  "query_type": "simple" or "complex",
-  "sub_queries": ["..."],
-  "reasoning": "เหตุผลสั้นๆ"
-}"""
+# Prompt is now loaded via registry.get("agentic_decompose")
 
 
 def _get_groq_client() -> Groq:
@@ -89,7 +68,7 @@ def decompose(query: str) -> DecompositionResult:
         response = client.chat.completions.create(
             model=settings.GROQ_MODEL,
             messages=[
-                {"role": "system", "content": DECOMPOSE_SYSTEM_PROMPT},
+                {"role": "system", "content": registry.get("agentic_decompose")},
                 {"role": "user", "content": f"คำถาม: {query}"},
             ],
             max_tokens=256,

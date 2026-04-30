@@ -8,15 +8,16 @@ import asyncio
 import time
 import config
 from rag_searcher import RAGSearcher
-from core.llm_generator import generate
+from core.llm.generator import generate
 from core.query_transformer import hyde_transform
-from core.agentic_controller import AgenticController
+from core.agentic.engine import AgenticEngine
+from core.agentic.formatter import AgenticFormatter
 
 class ChatService:
     def __init__(self):
         self.searcher = RAGSearcher()
         self.searcher.load_index()
-        self.agentic_controller = None
+        self.agentic_engine = None
 
     def get_searcher(self):
         return self.searcher
@@ -69,17 +70,21 @@ class ChatService:
     async def run_agentic_pipeline(self, query: str, use_hyde: bool = True):
         """
         Executes the agentic RAG pipeline.
-        Yields status updates and events from AgenticController.
+        Yields status updates and events from AgenticEngine via AgenticFormatter.
         """
-        if not self.agentic_controller:
-            self.agentic_controller = AgenticController(searcher=self.searcher, use_hyde=use_hyde)
+        if not self.agentic_engine:
+            self.agentic_engine = AgenticEngine(searcher=self.searcher, use_hyde=use_hyde)
         
-        # The controller already has a stream method, we just wrap it
+        # We start with an initial status
         yield {"type": "status", "stage": "decompose", "message": "🧠 กำลังวิเคราะห์คำถาม..."}
         
-        events = await asyncio.to_thread(
-            lambda: list(self.agentic_controller.run_stream_with_answer(query))
-        )
+        # Run engine in a thread and collect events
+        def run_engine():
+            for engine_event in self.agentic_engine.execute(query):
+                for ui_event in AgenticFormatter.format(engine_event):
+                    yield ui_event
+
+        events = await asyncio.to_thread(lambda: list(run_engine()))
         
         for event in events:
             yield {"type": "agentic_event", "event": event}

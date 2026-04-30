@@ -634,61 +634,67 @@ User: "Atomic Habits สอนวิธีสร้างนิสัยอย�
 
 ---
 
-## 10. โครงสร้างไฟล์และหน้าที่
+## 10. โครงสร้างไฟล์และหน้าที่ (Modular Design)
+
+ระบบถูกออกแบบใหม่เป็น **Modular & Service-Oriented Architecture** เพื่อแยกความรับผิดชอบ (Separation of Concerns) ให้ชัดเจน:
 
 ```
-RAG/
+BookMind/
 │
-├── config.py              ⚙️ Central Configuration
-│   └── ทุก setting อยู่ที่นี่: paths, models, chunking, hybrid weights
+├── web_server.py           🚀 Entry Point: FastAPI App initialization
+├── config.py               ⚙️ Global Config: เก็บค่าคงที่, น้ำหนักการค้นหา, และ thresholds
+├── rag_creator.py          🔨 Index Builder: โค้ดสำหรับสร้าง FAISS Index และ BM25 Corpus
+├── rag_searcher.py         🔍 Search Wrapper: ส่วนเชื่อมต่อรุ่นเก่า (Backward Compatibility)
 │
-├── rag_creator.py         🔨 Index Builder (Core)
-│   ├── TextChunker        → แบ่ง chunk + overlap
-│   ├── tokenize_thai()    → tokenize สำหรับ BM25
-│   └── RAGCreator         → อ่านข้อมูล → chunk → embed → save
+├── api/                    🌐 API Layer (Interface)
+│   ├── routes/             📄 Routers: แยก Chat API และ Admin API (Upload/Ingest)
+│   └── sse_handlers.py     ⚡ SSE Handlers: จัดการการส่งข้อมูลแบบ Real-time streaming
 │
-├── rag_searcher.py        🔍 Search Engine (Core)
-│   ├── tokenize_thai()    → tokenize query สำหรับ BM25
-│   └── RAGSearcher        → Dense + BM25 → merge → adaptive rerank
-│       ├── _dense_search()
-│       ├── _bm25_search()
-│       ├── _normalize_scores()
-│       ├── _hybrid_merge()
-│       ├── _should_rerank()  → ตัดสินใจ rerank หรือ skip
-│       └── search()       → orchestrate ทั้งหมด
+├── services/               🧠 Service Layer (Orchestration)
+│   └── chat_service.py     ประสานงานระหว่าง API, Retrieval, และ LLM Generator
 │
-├── build_index.py         ▶️ Entry Point: สร้าง/สร้างใหม่ index
-├── search.py              ▶️ Entry Point: ค้นหา interactive
-├── test_rag.py            ▶️ Entry Point: ทดสอบชุดคำถาม
+├── core/                   📦 Core Engine Modules (Business Logic)
+│   ├── retrieval/          🔍 Retrieval Pipeline: แยกขั้นตอน Search ออกเป็นโมดูลย่อย
+│   │   ├── tokenizer.py    ตัดคำไทย/อังกฤษ (Centralized Tokenizer)
+│   │   ├── reranker.py     จัดอันดับซ้ำด้วย Cross-Encoder
+│   │   └── pipeline.py     ควบคุมลำดับการค้นหา (Dense + BM25 + Rerank)
+│   │
+│   ├── agentic/            🧠 Agentic Engine: ระบบคิดวิเคราะห์และ Multi-hop search
+│   │   ├── engine.py       Core logic สำหรับการแตกคำถามและประเมินผล
+│   │   ├── formatter.py    จัดการข้อความภาษาไทยสำหรับขั้นตอนต่างๆ บน UI
+│   │   └── types.py        นิยาม Data structures ที่ใช้ร่วมกัน
+│   │
+│   ├── llm/                🤖 LLM Providers: จัดการการเชื่อมต่อโมเดล AI
+│   │   ├── gemini_provider.py จัดการ API Call, Key Rotation, และ Retry logic
+│   │   └── generator.py    API ระดับสูงสำหรับสร้างคำตอบจาก Context
+│   │
+│   ├── prompts/            📜 Prompt Management: แยก Prompt ออกจาก Code
+│   │   ├── prompt_registry.py โหลด Prompt จากไฟล์ .txt แบบ Dynamic
+│   │   └── *.txt           Template สำหรับงานต่างๆ (System, Agentic, Eval)
+│   │
+│   ├── key_manager.py      🔑 จัดการ API Keys แบบ Round-robin
+│   ├── query_transformer.py 🪄 จัดการ HyDE Query Transform
+│   └── document_loader.py  📄 รองรับการโหลดไฟล์หลากหลายฟอร์แมต
 │
-├── data/                  📂 ข้อมูลต้นทาง (.jsonl)
-├── storage/               💾 Index + Data ที่สร้างแล้ว
-│   ├── RAG_system.faiss       → FAISS vector index
-│   ├── RAG_system_data.pkl    → ข้อความ chunk ต้นฉบับ
-│   └── RAG_system_bm25.pkl   → Tokenized corpus สำหรับ BM25
-│
-└── docs/                  📖 เอกสาร
-    └── technical_guide.md     → เอกสารฉบับนี้
+└── web/                    🎨 Frontend: Vanilla HTML/CSS/JS (Dark Theme)
 ```
 
-### ความสัมพันธ์ระหว่างไฟล์
+### ความสัมพันธ์ระหว่างโมดูล (Data Flow)
 
-```
-config.py ◄──────── rag_creator.py
-    ▲                    ▲
-    │                    │
-    ├──────── rag_searcher.py
-    │                    ▲
-    │                    │
-    ├──── build_index.py ┘ (ใช้ RAGCreator)
-    ├──── search.py ───────── (ใช้ RAGSearcher)
-    └──── test_rag.py ─────── (ใช้ RAGSearcher)
+```mermaid
+graph LR
+    API[api/routes] --> SERVICE[services/chat_service]
+    SERVICE --> RETRIEVAL[core/retrieval/pipeline]
+    SERVICE --> AGENTIC[core/agentic/engine]
+    SERVICE --> GENERATOR[core/llm/generator]
+    GENERATOR --> PROMPT[core/prompts/registry]
+    GENERATOR --> PROVIDER[core/llm/gemini_provider]
 ```
 
 **หลักการออกแบบ:**
-- **Separation of Concerns:** แยก Creator (สร้าง) กับ Searcher (ค้น) ชัดเจน
-- **Single Source of Truth:** config.py เป็นที่เดียวที่เก็บ settings
-- **Entry Points แยก:** แต่ละ script ทำงานเดียว (SRP)
+- **Separation of Concerns:** แยก API, Business Logic, และ Data Access ออกจากกันเด็ดขาด
+- **Modularity:** แต่ละโฟลเดอร์ทำงานเฉพาะด้าน สามารถเปลี่ยนโมดูลหนึ่งโดยไม่กระทบส่วนอื่น
+- **Single Responsibility:** หนึ่งไฟล์ทำหน้าที่เพียงอย่างเดียว (เช่น `engine.py` คิดอย่างเดียว ไม่ยุ่งกับ UI)
 
 ---
 
@@ -960,16 +966,16 @@ Hybrid Search → Adaptive Reranking → Results
 
 > 🎓 **Grounding คืออะไร?** ในบริบท AI, Grounding หมายถึงการทำให้ LLM "ยึดโยง" คำตอบกับข้อมูลจริง แทนที่จะตอบจากความรู้ทั่วไป (ซึ่งอาจผิด/เก่า) ระบบ RAG ทำ Grounding โดยการส่ง context จากหนังสือจริงให้ Gemini อ่านก่อนตอบ → คำตอบจึงอ้างอิงได้ ไม่หลอน
 
-### ไฟล์: `core/llm_generator.py`
+### ไฟล์: `core/llm/generator.py` และ `core/llm/gemini_provider.py`
 
 | Component | รายละเอียด |
 |-----------|----------|
 | Model | Gemini 2.5 Flash |
 | Temperature | 0.3 (ตอบชัด ไม่เพ้อ) |
-| Max Tokens | ไม่จำกัด (ให้โมเดลตัดสินเอง) |
-| System Prompt | Adaptive role — วิเคราะห์คำถาม → เลือกบทบาท |
+| Prompt | โหลดจาก `core/prompts/rag_system.txt` ผ่าน Registry |
+| Provider Layer | จัดการ API Call, Key Rotation, และ Retry logic แยกส่วน |
 | Streaming | SSE (Server-Sent Events) real-time |
-| Key Rotation | Round-robin 10 keys |
+| Key Rotation | Round-robin 10 keys (ผ่าน KeyManager) |
 
 ### 🎓 Deep Dive: Temperature คืออะไร?
 
@@ -1038,19 +1044,19 @@ query + search_results
 
 > 🎓 **ทำไมต้องแยกเป็น package?** เพราะหลักการ **Separation of Concerns (SoC)** — โค้ดที่จัดการ API keys และ LLM มีหน้าที่ต่างจากโค้ดที่ทำ RAG (search, chunk, embed) การแยกไว้ทำให้เปลี่ยน LLM หรือเพิ่ม key ได้โดยไม่กระทบส่วนอื่น
 
-### โครงสร้าง
+### โครงสร้างใหม่ (Modular)
 
 ```
 core/
-├── __init__.py             # Package init
-├── config.py               # .env loader → Settings singleton
-├── key_manager.py          # Round-robin API key rotation
-├── llm_generator.py        # Gemini generation (sync + streaming)
-├── query_transformer.py    # HyDE + Query Rewriting (Groq)
-├── query_decomposer.py     # 🧠 Query Decomposition (simple/complex → sub-queries)
-├── evaluator.py            # 📊 Sufficiency Evaluator + follow-up queries
-├── agent_memory.py         # 💾 Working Memory (dedup + balanced chunk selection)
-└── agentic_controller.py   # 🔄 Agentic Orchestrator (decompose → search → eval → loop)
+├── retrieval/          🔍 Modular Retrieval Pipeline (Search/Rerank)
+├── agentic/            🧠 Agentic Reasoning Engine (Decompose/Eval)
+├── llm/                🤖 LLM Providers & Generation Logic
+├── prompts/            📜 Prompt Registry & .txt templates
+├── config.py           🔐 Environment & Key loading (Singleton)
+├── key_manager.py      🔑 Round-robin API key rotation
+├── query_transformer.py 🪄 HyDE Transform (Groq)
+├── document_loader.py  📄 Multi-format File Loader
+└── agent_memory.py     💾 Working Memory for Agentic mode
 ```
 
 ### Config แยก 2 ระดับ (Separation of Concerns)
@@ -1091,9 +1097,9 @@ Request 3 → K3 ... → Request 10 → K10 → K1 (วนซ้ำ)
 
 ## 13. Web UI — FastAPI + SSE
 
-### ไฟล์: `web_server.py` + `web/`
+### ไฟล์: `web_server.py`, `api/routes/`, และ `api/sse_handlers.py`
 
-Web UI เป็น chat interface แบบ dark theme ที่แสดงผลแบบ real-time streaming
+Web UI ถูกแยกเป็นสัดส่วนโดยใช้ FastAPI Routers เพื่อแยกหน้าที่ของ Chat และ Admin ออกจากกัน พร้อมระบบ SSE ที่เป็นอิสระ:
 
 ### 🎓 Deep Dive: SSE vs WebSocket
 
@@ -1347,79 +1353,64 @@ LLM จำแนกคำถามเป็น 2 ประเภท:
 
 **ไฟล์:** `core/agent_memory.py` → `get_balanced_chunks()`
 
-### Pipeline Flow แบบเต็ม
+## 19. 🧠 Agentic RAG — Multi-hop Retrieval (Modular)
 
-```
-User Query: "เปรียบเทียบ Atomic Habits กับ 7 Habits"
-│
-▼  [Step 1] QueryDecomposer (Groq: ~1.5s)
-│  → type: "complex"
-│  → sub_queries: ["Atomic Habits มุมมอง...", "7 Habits มุมมอง..."]
-│
-▼  [Step 2] Iteration 1/3
-│  ├── Sub-query 1: HyDE → Search → 10 results → AgentMemory (+10 new)
-│  └── Sub-query 2: HyDE → Search → 10 results → AgentMemory (+10 new)
-│  └── Total: 20 unique chunks
-│
-▼  [Step 3] Evaluate (Groq: ~1.5s)
-│  → confidence: 0.85 ≥ 0.7 → ✅ เพียงพอ!
-│  (ถ้า < 0.7 → สร้าง follow-up queries → วน Iteration 2)
-│
-▼  [Step 4] Balanced Selection
-│  → 5 chunks จาก Atomic Habits + 5 chunks จาก 7 Habits = 10 chunks
-│
-▼  [Step 5] Generate (Gemini: ~8-15s)
-│  → สังเคราะห์คำตอบเปรียบเทียบข้ามเล่ม + อ้างอิงแหล่งที่มา
-│
-🎯 Answer + Sources
-⏱️ Total: ~15-25s
+ระบบ Agentic ถูกออกแบบใหม่เป็น **Modular Engine** เพื่อแยก Business Logic ออกจากการแสดงผล:
+
+### โครงสร้างโมดูล (`core/agentic/`)
+
+| โมดูล | หน้าที่ |
+|-------|--------|
+| `engine.py` | **Orchestration Logic:** ควบคุม Loop การทำงาน (Decompose -> Search -> Evaluate) |
+| `formatter.py` | **UI Connector:** แปลงสถานะจาก Engine เป็นข้อความภาษาไทยและ SSE Events |
+| `types.py` | **Data Schema:** นิยาม Data Classes (AgenticState, SubQuery) ที่ใช้ร่วมกัน |
+
+### กระบวนการทำงาน (Multi-hop Loop)
+
+1. **Decompose:** แตกคำถามซับซ้อนเป็นย่อยๆ
+2. **Search Iteration:** วนค้นหาข้อมูลทีละส่วน และเก็บไว้ใน Memory
+3. **Evaluate:** ประเมินความมั่นใจ (Confidence Score)
+   - ถ้าคะแนน ≥ Threshold → จบการค้นหา
+   - ถ้าคะแนน < Threshold → สร้างคำถามเพิ่ม (Follow-up) แล้ววนใหม่
+
+### Pipeline Flow แบบเต็ม (Modular)
+
+```mermaid
+sequenceDiagram
+    participant S as ChatService
+    participant E as AgenticEngine
+    participant F as AgenticFormatter
+    participant M as AgentMemory
+    
+    S->>E: run_agentic_loop(query)
+    E->>E: Decompose Query
+    E-->>F: update_state(decomposed)
+    F-->>S: emit(agentic_decompose)
+    
+    loop Every Iteration
+        E->>E: Search Sub-queries
+        E->>M: Save Chunks
+        E-->>F: update_state(search_done)
+        F-->>S: emit(agentic_search)
+        
+        E->>E: Evaluate Sufficiency
+        E-->>F: update_state(eval_result)
+        F-->>S: emit(agentic_evaluate)
+    end
+    
+    E->>S: Final Memory Results
 ```
 
 ### Configuration — การปรับค่า Agentic
 
 | Parameter | ค่า | ปรับเมื่อ |
 |-----------|-----|----------|
-| `AGENTIC_MAX_ITERATIONS` | 3 | เพิ่มถ้าอยากให้ค้นลึกขึ้น (ช้าลง + API มากขึ้น) |
+| `AGENTIC_MAX_ITERATIONS` | 3 | เพิ่มถ้าอยากให้ค้นลึกขึ้น |
 | `AGENTIC_SUFFICIENCY_THRESHOLD` | 0.7 | ลดถ้าอยากให้ค้นเพิ่มบ่อยขึ้น |
 | `AGENTIC_MAX_CHUNKS` | 20 | เพิ่มถ้ามี context window เหลือเยอะ |
 
-> 💡 **Tuning Tip:** ถ้าคำถาม complex ตอบได้ไม่ครบ → ลด threshold เป็น 0.5 เพื่อให้ค้นเพิ่ม หรือเพิ่ม MAX_ITERATIONS เป็น 5
-
-### SSE Events (Web UI)
-
-| Event | Data | จังหวะ |
-|-------|------|--------|
-| `agentic_decompose` | `{query_type, sub_queries}` | หลัง decompose |
-| `agentic_search` | `{iteration, query, new_chunks}` | หลังค้นแต่ละ sub-query |
-| `agentic_evaluate` | `{confidence, missing}` | หลัง evaluate |
-| `sources` | `{sources[]}` | ก่อนสร้างคำตอบ |
-| `token` | `{text}` | ระหว่าง stream คำตอบ |
-
-### วิธีใช้งาน
-
-**CLI:**
-```bash
-# Agentic mode
-python3 ask.py --agentic "เปรียบเทียบ Rich Dad กับ Psychology of Money"
-
-# Interactive + Agentic
-python3 ask.py --agentic
-
-# Agentic ไม่ใช้ HyDE
-python3 ask.py --agentic --no-hyde "..."
-```
-
-**Web UI:** เปิด toggle 🧠 **Agentic** ที่ช่อง input → ดู progress ของแต่ละ iteration แบบ real-time
-
-**Test:**
-```bash
-python3 test_agentic.py              # Unit tests (ไม่ใช้ API)
-python3 test_agentic.py --live       # Live tests (ใช้ API)
-python3 test_agentic.py --query "…"  # Single agentic query
-```
-
 ---
 
-> 📅 **Last Updated:** February 2025
-> 📝 **Author:** Auto-generated documentation
-> 🔖 **Version:** 3.0 — Full RAG Pipeline + 🧠 Agentic RAG (HyDE + Hybrid Search + Adaptive Reranking + Gemini Generation + Query Decomposition + Multi-hop Retrieval + Web UI)
+> 📅 **Last Updated:** April 2026 (Modular Refactoring)
+> 📝 **Author:** Antigravity AI
+> 🔖 **Version:** 4.0 — **Modular & Service-Oriented RAG** (Clean Architecture, Provider Interface, Prompt Registry, Modular Retrieval Pipeline, Agentic Engine)

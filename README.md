@@ -22,75 +22,33 @@
 
 ---
 
-## 🏗️ Architecture
+### 🏗️ Architecture (Modular Design)
 
-ระบบรองรับ 2 โหมด:
-- **Classic:** HyDE → Search → Generate (single-shot)
-- **🧠 Agentic:** Decompose → Multi-hop Search → Evaluate → Generate
+ระบบถูกออกแบบใหม่เป็น **Modular & Service-Oriented Architecture** เพื่อความยืดหยุ่นและการขยายตัว:
 
-### Classic Pipeline
+1. **API Layer (`api/`)**: แยก Routing (Chat/Admin) และ SSE Handlers ออกจากกัน
+2. **Service Layer (`services/`)**: Orchestrator หลักที่ประสานงานทุกโมดูล
+3. **Retrieval Pipeline (`core/retrieval/`)**: แยกขั้นตอน Tokenize, Search (Dense/BM25) และ Rerank
+4. **Agentic Engine (`core/agentic/`)**: แยก Business Logic ของการคิดวิเคราะห์ออกจาก UI
+5. **LLM & Prompt Management (`core/llm/`, `core/prompts/`)**: แยก Prompt templates ออกเป็นไฟล์ และจัดการ LLM Provider อิสระ
 
-```
-User Query
-    │
-    ▼
-┌──────────────────────────┐
-│  Stage 0: HyDE Transform │
-│  (Groq LLaMA 3.3 70B)   │
-│  สร้างคำตอบสมมติเพื่อ     │
-│  ปรับปรุงความแม่นยำค้นหา   │
-└────────────┬─────────────┘
-             ▼
-    ┌────────┴────────┐
-    ▼                 ▼
-┌────────────┐  ┌──────────┐
-│Dense Search│  │BM25 Search│
-│ (FAISS+GPU)│  │  (CPU)   │
-│ e5-large   │  │ rank-bm25│
-└─────┬──────┘  └─────┬────┘
-      │ 70%           │ 30%
-      └───────┬───────┘
-              ▼
-     ┌────────────────┐
-     │ Adaptive Gate  │
-     │ gap > 0.15 → ⚡│
-     │ gap ≤ 0.15 → 🔬│
-     └───┬───────┬────┘
-    ⚡Skip   🔬Rerank
-         └───┬───┘
-             ▼
-   Gemini LLM Generation
-   SSE Streaming → Web UI
-```
-
-### 🧠 Agentic Pipeline (Multi-hop)
-
-```
-User Query (complex, multi-book)
-    │
-    ▼
-┌──────────────────────────┐
-│  Decompose (Groq LLM)   │ "เปรียบเทียบ A กับ B"
-│  → sub-query 1: "A"     │  → แยกเป็น 2 คำถามย่อย
-│  → sub-query 2: "B"     │
-└────────────┬─────────────┘
-             ▼
-    ┌────────┴─────────┐
-    ▼                  ▼
- [HyDE → Search 1]  [HyDE → Search 2]
-    │                  │
-    └────────┬─────────┘
-             ▼
-┌──────────────────────────┐
-│  Evaluate (Groq LLM)    │ ข้อมูลครบหรือยัง?
-│  confidence ≥ 0.7 → ✅   │ → ครบ! สร้างคำตอบ
-│  confidence < 0.7 → 🔄   │ → ยังไม่ครบ ค้นเพิ่ม
-└────────────┬─────────────┘
-             ▼
-┌──────────────────────────┐
-│  Balanced Chunk Select   │ round-robin จากทุก source
-│  → Gemini Generation     │ สังเคราะห์ข้ามเล่ม
-└──────────────────────────┘
+```mermaid
+graph TD
+    UI[Web UI / JS] <--> API[FastAPI Routers]
+    API <--> CHAT[Chat Service]
+    CHAT <--> RET[Retrieval Pipeline]
+    CHAT <--> AGENT[Agentic Engine]
+    CHAT <--> GEN[LLM Generator]
+    
+    AGENT <--> DEC[Query Decomposer]
+    AGENT <--> EVAL[Sufficiency Evaluator]
+    
+    RET <--> FAISS[FAISS Index]
+    RET <--> BM25[BM25 Corpus]
+    RET <--> RERANK[Cross-Encoder Reranker]
+    
+    GEN <--> PROMPTS[Prompt Registry]
+    GEN <--> PROVIDER[Gemini Provider]
 ```
 
 ### Pipeline Stages
@@ -109,71 +67,52 @@ User Query (complex, multi-book)
 
 ---
 
-## 🧠 Models
-
-| Role | Model | ขนาด | ทำงานบน |
-|------|-------|-------|---------|
-| **Embedding** | `intfloat/multilingual-e5-large` | ~2.2 GB | GPU (local) |
-| **Reranker** | `BAAI/bge-reranker-v2-m3` | ~2.2 GB | GPU (local) |
-| **LLM Generation** | `Gemini 2.5 Flash` | — | Cloud API |
-| **HyDE Transform** | `Groq LLaMA 3.3 70B` | — | Cloud API |
-
-- โมเดล Embedding + Reranker เก็บในเครื่อง (`~/MyModels/Model-RAG/`)
-- LLM ใช้ API keys แบบ round-robin (10 Gemini + 3 Groq keys)
-
----
-
-## ✂️ Chunking Strategy
-
-| Parameter | ค่า | เหตุผล |
-|-----------|-----|--------|
-| `CHUNK_SIZE` | 500 chars | พอดีกับ Embedding model (~1 ย่อหน้า) |
-| `CHUNK_OVERLAP` | 100 chars | ป้องกันข้อมูลหายตรงรอยตัด |
-
-**ลำดับการแบ่ง:**
-1. แบ่งที่ `\n` (ย่อหน้า) ก่อน
-2. ถ้ายังยาวเกิน → แบ่งที่ `.` `。` `!` `?` (จุดจบประโยค)
-3. ทุก chunk แนบ `[ชื่อหนังสือ]` + `หัวข้อ` ไว้ด้านบนเสมอ
-
----
-
 ## 📁 Project Structure
 
 ```
-RAG/
-├── config.py               # ⚙️  Central config (paths, models, tuning, agentic)
-├── rag_creator.py          # 🔨 Chunking + embedding + index building
-├── rag_searcher.py         # 🔍 Hybrid search + adaptive reranking
-├── build_index.py          # ▶️  CLI: build/rebuild index
-├── search.py               # ▶️  CLI: interactive search (retrieval only)
-├── ask.py                  # 🤖 CLI: full RAG pipeline (Classic + Agentic)
-├── web_server.py           # 🌐 FastAPI + SSE streaming (Classic + Agentic)
-├── test_rag.py             # ✅ Test suite (search)
-├── test_agentic.py         # 🧪 Test suite (agentic pipeline)
+BookMind/
+├── web_server.py           # 🚀 Entry Point: FastAPI App initialization
+├── config.py               # ⚙️ Global App Config (Constants, Weights)
+├── rag_creator.py          # 🔨 Index Builder (Indexing logic)
+├── rag_searcher.py         # 🔍 Search Wrapper (Backward compatibility)
 │
-├── core/                   # 📦 Core modules
-│   ├── __init__.py
-│   ├── config.py           #   🔐 .env loader (API keys, model settings)
-│   ├── key_manager.py      #   🔑 Round-robin API key rotation
-│   ├── llm_generator.py    #   🤖 Gemini LLM generation (sync + streaming)
-│   ├── query_transformer.py#   🪄 HyDE + Query Rewriting (via Groq)
-│   ├── query_decomposer.py #   🧠 Query Decomposition (simple/complex → sub-queries)
-│   ├── evaluator.py        #   📊 Sufficiency Evaluator (confidence + follow-up)
-│   ├── agent_memory.py     #   💾 Working Memory (dedup + balanced selection)
-│   └── agentic_controller.py#  🔄 Agentic Orchestrator (decompose → search → eval → loop)
+├── api/                    # 🌐 API Layer
+│   ├── routes/             #   📄 FastAPI Routers (chat, admin)
+│   └── sse_handlers.py     #   ⚡ SSE Event Generators (Classic/Agentic)
 │
-├── web/                    # 🎨 Frontend (Dark theme chat UI)
-│   ├── index.html          #   📄 Main page (HyDE + Agentic toggles)
-│   ├── style.css           #   🎨 Dark theme + agentic steps UI
-│   └── app.js              #   ⚡ SSE streaming + agentic event handling
+├── services/               # 🧠 Service Layer (Business Logic)
+│   └── chat_service.py     #   Orchestrator for all search pipelines
 │
-├── data/                   # 📂 Source .jsonl files (120 files, 3,002+ entries)
-├── storage/                # 💾 FAISS + BM25 + text data indices
-│   ├── RAG_system.faiss
-│   ├── RAG_system_data.pkl
-│   └── RAG_system_bm25.pkl
-├── .env                    # 🔐 API keys (Gemini x10, Groq x3)
-└── venv/                   # Python virtual environment
+├── core/                   # 📦 Core Engine Modules
+│   ├── retrieval/          #   🔍 Modular Retrieval Pipeline
+│   │   ├── tokenizer.py    #     Thai/English text tokenization
+│   │   ├── reranker.py     #     Cross-Encoder Reranking logic
+│   │   ├── base_search.py  #     Dense/BM25 low-level search
+│   │   └── pipeline.py     #     Retrieval Pipeline orchestrator
+│   │
+│   ├── agentic/            #   🧠 Agentic Reasoning Engine
+│   │   ├── engine.py       #     Pure multi-hop orchestration
+│   │   ├── formatter.py    #     Thai UI message formatting
+│   │   └── types.py        #     Shared data structures
+│   │
+│   ├── llm/                #   🤖 LLM Providers
+│   │   ├── gemini_provider.py#     Gemini API with Key Rotation
+│   │   └── generator.py    #     High-level Answer Generator
+│   │
+│   ├── prompts/            #   📜 Prompt Management
+│   │   ├── prompt_registry.py#     Central prompt loader
+│   │   └── *.txt           #     Prompt templates (system, agentic)
+│   │
+│   ├── config.py           #   🔐 Environment & Key loading
+│   ├── key_manager.py      #   🔑 Key Rotation logic
+│   ├── query_transformer.py#   🪄 HyDE (via Groq)
+│   ├── document_loader.py  #   📄 File loader (Excel, PPTX, etc.)
+│   └── agent_memory.py     #   💾 Working memory for Agentic mode
+│
+├── web/                    # 🎨 Frontend (HTML/CSS/JS)
+├── data/                   # 📂 Source Documents
+├── storage/                # 💾 Vector & Keyword Indices
+└── .env                    # 🔐 API Keys
 ```
 
 ---

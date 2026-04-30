@@ -19,6 +19,7 @@ from dataclasses import dataclass, field
 from groq import Groq
 from core.config import settings
 from core.key_manager import groq_key_manager
+from core.prompts.prompt_registry import registry
 
 
 # ──────────────────────────────────────────────
@@ -37,31 +38,7 @@ class EvaluationResult:
 # ──────────────────────────────────────────────
 # Evaluation Prompt
 # ──────────────────────────────────────────────
-EVALUATE_SYSTEM_PROMPT = """คุณเป็น AI ที่ประเมินว่าข้อมูลที่ค้นหาได้เพียงพอต่อการตอบคำถามหรือไม่
-
-คุณจะได้รับ:
-1. คำถามต้นฉบับ
-2. Sub-queries ที่วางแผนจะค้นหา
-3. สรุปข้อมูลที่ค้นได้แล้ว
-
-ภารกิจ: ประเมินว่าข้อมูลเพียงพอหรือยัง
-
-กฎการประเมิน:
-- confidence 0.8-1.0 = ข้อมูลครบ ตอบได้ดี
-- confidence 0.5-0.79 = ข้อมูลพอใช้ได้ แต่ยังมีส่วนที่ขาด
-- confidence 0.0-0.49 = ข้อมูลยังไม่เพียงพอ
-
-- ถ้ายังไม่เพียงพอ ให้แนะนำ follow_up_queries (1-2 อัน) ที่จะช่วยเติมส่วนที่ขาด
-- follow_up_queries ต้องต่างจาก sub_queries เดิม (ไม่ใช่ค้นซ้ำ)
-
-ตอบเป็น JSON เท่านั้น:
-{
-  "is_sufficient": true/false,
-  "confidence": 0.0-1.0,
-  "missing_aspects": ["สิ่งที่ยังขาด..."],
-  "follow_up_queries": ["query เพิ่มเติม..."],
-  "reasoning": "เหตุผลสั้นๆ"
-}"""
+# Prompt is now loaded via registry.get("agentic_eval")
 
 
 def _get_groq_client() -> Groq:
@@ -108,7 +85,7 @@ Sub-queries ที่วางแผนไว้: {json.dumps(sub_queries, ensur
         response = client.chat.completions.create(
             model=settings.GROQ_MODEL,
             messages=[
-                {"role": "system", "content": EVALUATE_SYSTEM_PROMPT},
+                {"role": "system", "content": registry.get("agentic_eval")},
                 {"role": "user", "content": user_prompt},
             ],
             max_tokens=256,
