@@ -11,7 +11,6 @@ venv/
 .venv/
 env/
 .env
-.env.example
 # FAISS Index & Storage (large binary files — rebuild with build_index.py)
 storage/
 

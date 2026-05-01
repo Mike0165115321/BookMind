@@ -143,7 +143,7 @@ python3 ask.py --agentic --no-hyde ".."  # Agentic ไม่ใช้ HyDE
 ### 4. Web UI
 ```bash
 python3 web_server.py
-# → Open http://localhost:8000
+# → Open http://localhost:8080
 # → เปิด toggle 🧠 Agentic สำหรับคำถามซับซ้อน
 ```
 

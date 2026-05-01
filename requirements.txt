@@ -1,0 +1,26 @@
+# Web Framework & Server
+fastapi
+uvicorn
+sse-starlette
+
+# LLM Providers
+google-genai
+groq
+python-dotenv
+
+# RAG & Vector Search
+sentence-transformers
+faiss-cpu
+rank-bm25
+torch
+numpy
+
+# Document Processing
+pandas
+openpyxl
+python-pptx
+python-docx
+PyMuPDF
+
+# Utilities
+tqdm

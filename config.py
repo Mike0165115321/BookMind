@@ -6,6 +6,12 @@ All other modules import from here — single source of truth.
 import os
 
 # ──────────────────────────────────────────────
+# Application Server
+# ──────────────────────────────────────────────
+APP_HOST = "0.0.0.0"
+APP_PORT = 8080        # Change this if 8000 is occupied
+
+# ──────────────────────────────────────────────
 # Paths
 # ──────────────────────────────────────────────
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
