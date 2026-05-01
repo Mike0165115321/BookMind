@@ -36,9 +36,7 @@ def main():
     print("=" * 50)
     creator = RAGCreator()
     success = creator.build_and_save(
-        source_path=config.DATA_DIR,
-        save_dir=config.STORAGE_DIR,
-        index_name=config.INDEX_NAME
+        source_path=config.DATA_DIR
     )
 
     if success:

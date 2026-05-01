@@ -113,10 +113,11 @@ class RAGCreator:
         """Full build from directory."""
         source_path = source_path or config.DATA_DIR
         if not self.data:
-            for filename in sorted(os.listdir(source_path)):
-                filepath = os.path.join(source_path, filename)
-                if os.path.isfile(filepath):
-                    self.data.extend(self.process_single_file(filepath))
+            for root, dirs, files in os.walk(source_path):
+                for filename in sorted(files):
+                    filepath = os.path.join(root, filename)
+                    if os.path.isfile(filepath):
+                        self.data.extend(self.process_single_file(filepath))
         
         if not self.data: return False
         

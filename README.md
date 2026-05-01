@@ -117,6 +117,32 @@ BookMind/
 
 ---
 
+## 🛠️ การติดตั้งและตั้งค่า (Setup)
+
+### 1. เตรียม Environment
+```bash
+# สร้าง Virtual Environment (ถ้ายังไม่มี)
+python3 -m venv venv
+
+# เปิดใช้งาน (Activate) Environment
+source venv/bin/activate
+
+# ติดตั้ง Dependencies
+pip install -r requirements.txt
+```
+
+### 2. ตั้งค่า API Keys
+- คัดลอกไฟล์ `.env.example` เป็น `.env`
+- ใส่ API Keys ของ Gemini และ Groq ในไฟล์ `.env`
+
+### 3. ตั้งค่า Discord Bot (กรณีใช้งาน)
+- ไปที่ [Discord Developer Portal](https://discord.com/developers/applications/)
+- เลือก Application ของคุณ > ไปที่เมนู **Bot**
+- ภายใต้หัวข้อ **Privileged Gateway Intents** ให้เปิด **Message Content Intent** เป็น **On**
+- บันทึกการเปลี่ยนแปลง (Save Changes)
+
+---
+
 ## 🚀 Quick Start
 
 ### 1. Build Index
