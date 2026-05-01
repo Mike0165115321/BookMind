@@ -21,8 +21,12 @@ STORAGE_DIR = os.path.join(BASE_DIR, "storage")
 # ──────────────────────────────────────────────
 # Models (local paths — no internet required)
 # ──────────────────────────────────────────────
-MODEL_EMBEDDING = "/home/mikedev/MyModels/Model-RAG/intfloat-multilingual-e5-large"
-MODEL_RERANKER = "/home/mikedev/MyModels/Model-RAG/BAAI-bge-reranker-v2-m3"
+# Try to use local paths if they exist (for speed), otherwise fallback to Hugging Face model names
+_LOCAL_EMBEDDING = "/home/mikedev/MyModels/Model-RAG/intfloat-multilingual-e5-large"
+_LOCAL_RERANKER = "/home/mikedev/MyModels/Model-RAG/BAAI-bge-reranker-v2-m3"
+
+MODEL_EMBEDDING = _LOCAL_EMBEDDING if os.path.exists(_LOCAL_EMBEDDING) else "intfloat/multilingual-e5-large"
+MODEL_RERANKER = _LOCAL_RERANKER if os.path.exists(_LOCAL_RERANKER) else "BAAI/bge-reranker-v2-m3"
 
 # ──────────────────────────────────────────────
 # Index

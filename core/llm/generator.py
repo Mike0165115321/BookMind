@@ -10,13 +10,19 @@ from core.llm.gemini_provider import GeminiProvider
 default_provider = GeminiProvider()
 
 def _build_context(search_results: list) -> str:
-    """Build context string from search results."""
+    """Build context string from search results with document name labels."""
     if not search_results:
         return "ไม่พบข้อมูลที่เกี่ยวข้อง"
 
     context_parts = []
-    for i, (text, score) in enumerate(search_results, 1):
-        context_parts.append(f"[แหล่งที่ {i}] (ความเกี่ยวข้อง: {score:.2f})\n{text}")
+    for text, score in search_results:
+        # Extract document title from the [Title] prefix
+        doc_name = "ไม่ระบุ"
+        if text.startswith("[") and "]" in text:
+            doc_name = text.split("]")[0].lstrip("[")
+        
+        # Simple citation label as requested by USER
+        context_parts.append(f"(จาก: {doc_name})\n{text}")
 
     return "\n\n---\n\n".join(context_parts)
 
