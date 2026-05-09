@@ -122,13 +122,13 @@ class GeminiClient(BaseLLMClient):
             client = self._get_client()
             models = []
             for m in client.models.list():
-                # Google GenAI SDK (new) uses 'supported_actions' usually
-                # or we can just filter by name to get gemini models
-                if "gemini" in m.name.lower():
+                name_lower = m.name.lower()
+                # Keep only gemini models, exclude experimental (exp) and vision models
+                if "gemini" in name_lower and "exp" not in name_lower and "vision" not in name_lower:
                     # Extract the model ID (e.g., 'models/gemini-1.5-flash' -> 'gemini-1.5-flash')
                     name = m.name.split("/")[-1]
                     models.append(name)
-            return models
+            return sorted(models)
         except Exception as e:
             print(f"⚠️ Could not list Gemini models: {e}")
             return []

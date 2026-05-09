@@ -113,13 +113,21 @@ class OpenRouterClient(BaseLLMClient):
             yield LLMStreamChunk(text=f"\n❌ OpenRouter Error: {str(e)}", is_last=True)
 
     def list_models(self) -> List[str]:
-        """Fetch all available models from OpenRouter."""
+        """Fetch only FREE models from OpenRouter."""
         try:
             conn = http.client.HTTPSConnection(self.host, self.port)
             conn.request("GET", f"{self.path_prefix}/models", headers=self._get_headers())
             res = conn.getresponse()
             data = json.loads(res.read().decode())
-            return [m["id"] for m in data.get("data", [])]
+            
+            # Filter for models that have ':free' in their ID, but exclude vision/moderation
+            free_models = []
+            for m in data.get("data", []):
+                id_lower = m["id"].lower()
+                if ":free" in id_lower and "vision" not in id_lower and "moderation" not in id_lower:
+                    free_models.append(m["id"])
+            
+            return sorted(free_models)
         except Exception as e:
             print(f"⚠️ Could not list OpenRouter models: {e}")
             return []

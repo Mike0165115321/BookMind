@@ -1,3 +1,5 @@
+import json
+import http.client
 import time
 from typing import List, Generator, Optional
 from groq import Groq
@@ -6,6 +8,7 @@ from core.llm.shared.base import BaseLLMClient
 from core.llm.shared.types import Message, GenerationConfig
 from core.llm.shared.response import LLMResponse, LLMStreamChunk
 from core.llm.groq.config import groq_config
+from core.llm.groq.utils import groq_keys
 from core.llm.groq.utils import groq_keys
 
 class GroqClient(BaseLLMClient):
@@ -94,11 +97,33 @@ class GroqClient(BaseLLMClient):
                 return
 
     def list_models(self) -> List[str]:
-        """List available Groq models."""
+        """List available text-generation models from Groq."""
         try:
-            client = self._get_client()
-            models = client.models.list()
-            return [m.id for m in models.data]
+            api_key = groq_keys.get_key()
+            if not api_key:
+                print("⚠️ No API key available for Groq.")
+                return []
+                
+            conn = http.client.HTTPSConnection("api.groq.com")
+            conn.request("GET", "/openai/v1/models", headers={
+                "Authorization": f"Bearer {api_key}"
+            })
+            res = conn.getresponse()
+            data = json.loads(res.read().decode())
+            
+            # Filter for text models only (exclude whisper, guard, etc.)
+            allowed_keywords = ['llama', 'mixtral', 'gemma', 'qwen']
+            ignored_keywords = ['whisper', 'guard', 'vision']
+            
+            models = []
+            for m in data.get("data", []):
+                model_id = m["id"].lower()
+                # Must have allowed keyword AND NOT have ignored keyword
+                if any(k in model_id for k in allowed_keywords) and \
+                   not any(k in model_id for k in ignored_keywords):
+                    models.append(m["id"])
+            
+            return sorted(models)
         except Exception as e:
             print(f"⚠️ Could not list Groq models: {e}")
             return []

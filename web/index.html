@@ -10,9 +10,9 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <!-- CSS Modules -->
-    <link rel="stylesheet" href="/static/css/base.css">
-    <link rel="stylesheet" href="/static/css/layout.css">
-    <link rel="stylesheet" href="/static/css/chat.css">
+    <link rel="stylesheet" href="/static/css/base.css?v=2">
+    <link rel="stylesheet" href="/static/css/layout.css?v=2">
+    <link rel="stylesheet" href="/static/css/chat.css?v=2">
 
     <!-- Libraries -->
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
@@ -21,16 +21,20 @@
     <div class="app-wrapper">
         <!-- ── Sidebar ── -->
         <aside class="sidebar" id="sidebar">
-            <div class="history-section">
-                <div id="historyList" class="history-list">
-                    <!-- History items will be loaded from DB -->
-                </div>
-            </div>
-            <div class="sidebar-actions" style="margin-top: 48px;">
+            <div class="sidebar-header" style="margin-bottom: 24px;">
                 <button class="new-chat-btn" id="newChatBtn">
                     <i class="far fa-edit"></i>
                     <span>แชทใหม่</span>
                 </button>
+            </div>
+            
+            <div class="history-section" style="flex: 1; overflow-y: auto;">
+                <div id="historyList" class="history-list">
+                    <!-- History items will be loaded from DB -->
+                </div>
+            </div>
+
+            <div class="sidebar-actions" style="margin-top: auto; padding-top: 16px; border-top: 1px solid var(--border);">
                 <a href="/admin" class="nav-item">
                     <i class="fas fa-rocket"></i>
                     <span>เพิ่มข้อมูล</span>
@@ -64,16 +68,15 @@
             <!-- Floating Input Area -->
             <div class="input-container">
                 <div class="floating-input-wrapper">
-                    <button class="input-action-btn" title="Add files">
-                        <i class="fas fa-plus"></i>
-                    </button>
-                    <button class="input-action-btn" title="Web Search">
-                        <i class="fas fa-globe"></i>
-                    </button>
-                    
                     <textarea id="queryInput" placeholder="Send a message" rows="1"></textarea>
                     
                     <div class="input-right-actions">
+                        <button class="input-action-btn" title="Add files">
+                            <i class="fas fa-plus"></i>
+                        </button>
+                        <button class="input-action-btn" title="Web Search">
+                            <i class="fas fa-globe"></i>
+                        </button>
                         <select id="modelSelector" class="inline-model-select">
                             <!-- Models will be loaded here -->
                         </select>

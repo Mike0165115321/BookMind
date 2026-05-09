@@ -38,7 +38,7 @@
 
 /* ── Floating Input Container ── */
 .input-container {
-    padding: 20px 0 32px;
+    padding: 20px 0 48px;
     background: linear-gradient(to top, var(--bg-main) 80%, transparent);
 }
 
@@ -79,55 +79,74 @@
     align-items: center;
     justify-content: center;
     color: var(--text-muted);
+    background: rgba(255, 255, 255, 0.08); /* Circular background */
+    border: none;
+    cursor: pointer;
+    transition: var(--transition);
 }
 
 .input-action-btn:hover {
-    background: var(--bg-hover);
+    background: rgba(255, 255, 255, 0.15);
     color: var(--text-main);
 }
 
 .input-right-actions {
     display: flex;
     align-items: center;
-    gap: 4px;
-    background: rgba(255, 255, 255, 0.05);
-    padding: 4px 8px;
-    border-radius: 20px;
-    margin-bottom: 4px;
-    border: 1px solid rgba(255, 255, 255, 0.03);
+    gap: 8px; /* Spacing between isolated buttons */
 }
 
 .inline-model-select {
-    background: transparent;
+    background: rgba(255, 255, 255, 0.08); /* Pill background */
     border: none;
+    border-radius: 18px; /* Pill shape */
     color: var(--text-main);
     font-size: 13px;
-    font-weight: 600;
-    padding: 4px 24px 4px 8px;
+    font-weight: 500;
+    padding: 8px 32px 8px 14px;
     cursor: pointer;
     outline: none;
     appearance: none;
     -webkit-appearance: none;
     background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
     background-repeat: no-repeat;
-    background-position: right 4px center;
+    background-position: right 10px center;
     background-size: 14px;
+    max-width: 160px; /* Prevent stretching */
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    overflow: hidden;
+    transition: var(--transition);
+}
+
+.inline-model-select:hover {
+    background: rgba(255, 255, 255, 0.15);
+}
+
+.inline-model-select option,
+.inline-model-select optgroup {
+    background: var(--bg-input);
+    color: var(--text-main);
+    font-size: 14px;
+    padding: 8px;
 }
 
 .send-btn {
-    width: 32px;
-    height: 32px;
-    background: #333;
+    width: 36px;
+    height: 36px;
+    background: rgba(255, 255, 255, 0.08); /* Match other buttons */
     color: var(--text-main);
+    border: none;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
+    cursor: pointer;
     transition: var(--transition);
 }
 
 .send-btn:hover {
-    background: #444;
+    background: rgba(255, 255, 255, 0.15);
 }
 
 .send-btn.active {

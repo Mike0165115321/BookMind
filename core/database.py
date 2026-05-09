@@ -27,6 +27,18 @@ class Database:
                     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 )
             """)
+            # Table for Messages
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS messages (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    chat_id TEXT,
+                    role TEXT,
+                    content TEXT,
+                    metadata TEXT,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY (chat_id) REFERENCES chats (id) ON DELETE CASCADE
+                )
+            """)
             # Table for Settings
             conn.execute("""
                 CREATE TABLE IF NOT EXISTS settings (
@@ -39,6 +51,11 @@ class Database:
     def create_chat(self, chat_id, title="New Chat"):
         with self.get_connection() as conn:
             conn.execute("INSERT INTO chats (id, title) VALUES (?, ?)", (chat_id, title))
+            conn.commit()
+
+    def delete_chat(self, chat_id):
+        with self.get_connection() as conn:
+            conn.execute("DELETE FROM chats WHERE id = ?", (chat_id,))
             conn.commit()
 
     def add_message(self, chat_id, role, content, metadata=None):

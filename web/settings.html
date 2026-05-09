@@ -15,7 +15,7 @@
     <style>
         .settings-container {
             max-width: 800px;
-            margin: 60px auto;
+            margin: 40px auto;
             padding: 40px;
             background: var(--bg-sidebar);
             border: 1px solid var(--border);
@@ -44,21 +44,40 @@
         }
         .settings-section {
             margin-bottom: 32px;
-            padding-bottom: 24px;
-            border-bottom: 1px solid var(--border);
+            padding: 24px;
+            background: rgba(255,255,255,0.03);
+            border-radius: var(--radius-md);
+            border: 1px solid var(--border);
         }
-        .settings-section h2 {
-            font-size: 18px;
-            margin-bottom: 16px;
-            color: var(--accent);
-        }
-        .form-group {
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
             margin-bottom: 20px;
+        }
+        .section-header h2 {
+            font-size: 18px;
+            color: var(--accent);
+            margin: 0;
+        }
+        .section-content {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            animation: fadeIn 0.3s ease;
+        }
+        .section-content.hidden {
+            display: none;
+        }
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
         }
         .form-group label {
             display: block;
             margin-bottom: 8px;
-            font-size: 14px;
+            font-size: 13px;
             color: var(--text-muted);
         }
         .form-select {
@@ -70,11 +89,15 @@
             color: var(--text-main);
             font-size: 15px;
             outline: none;
+            transition: var(--transition);
         }
-        .save-bar {
-            display: flex;
-            justify-content: flex-end;
-            margin-top: 40px;
+        .form-select:focus {
+            border-color: var(--accent);
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
         }
     </style>
 </head>
@@ -85,76 +108,147 @@
             <h1>ตั้งค่าระบบ</h1>
         </div>
 
+        <!-- ── HyDE Section ── -->
         <div class="settings-section">
-            <h2>🧠 การตั้งค่าโมเดล</h2>
-            <div class="form-group">
-                <label>ค่ายโมเดลสำหรับ HyDE (Query Expansion)</label>
-                <select id="hydeModelSelect" class="form-select">
-                    <!-- Loaded dynamically -->
-                </select>
+            <div class="section-header">
+                <h2>🪄 HyDE Settings (Query Expansion)</h2>
             </div>
-            <div class="form-group">
-                <label>ค่ายโมเดลสำหรับ Generation (คำตอบหลัก)</label>
-                <select id="genModelSelect" class="form-select">
-                    <!-- Loaded dynamically -->
-                </select>
+            <div id="hydeContent" class="section-content">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>เลือกค่ายโมเดล</label>
+                        <select id="hydeProvider" class="form-select"></select>
+                    </div>
+                    <div class="form-group">
+                        <label>เลือกโมเดล</label>
+                        <select id="hydeModel" class="form-select"></select>
+                    </div>
+                </div>
             </div>
         </div>
 
+        <!-- ── Generation Section ── -->
         <div class="settings-section">
-            <h2>⚙️ ค่าพื้นฐาน</h2>
-            <div class="form-group">
-                <label>อุณหภูมิโมเดล (Temperature)</label>
-                <input type="range" min="0" max="1" step="0.1" value="0.7" id="tempRange" style="width: 100%;">
+            <div class="section-header">
+                <h2>🧠 Generation Settings (คำตอบหลัก)</h2>
+            </div>
+            <div id="genContent" class="section-content">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>เลือกค่ายโมเดล</label>
+                        <select id="genProvider" class="form-select"></select>
+                    </div>
+                    <div class="form-group">
+                        <label>เลือกโมเดล</label>
+                        <select id="genModel" class="form-select"></select>
+                    </div>
+                </div>
             </div>
         </div>
 
-        <div class="save-bar">
-            <button id="saveSettingsBtn" class="primary-btn" style="padding: 12px 32px;">บันทึกข้อมูล</button>
+        <div class="save-bar" style="display: flex; justify-content: flex-end;">
+            <button id="saveBtn" class="primary-btn" style="padding: 12px 40px; font-size: 16px;">
+                <i class="fas fa-save" style="margin-right: 10px;"></i> บันทึกการตั้งค่า
+            </button>
         </div>
     </div>
 
     <script type="module">
         import { API } from '/static/js/api.js';
 
-        async function loadSettings() {
-            const [models, current] = await Promise.all([
-                API.fetchModels(),
-                API.fetchSettings()
-            ]);
+        let allModels = {};
 
-            renderOptions('hydeModelSelect', models, current.hyde_model);
-            renderOptions('genModelSelect', models, current.gen_model);
-        }
+        async function init() {
+            try {
+                const [models, settings] = await Promise.all([
+                    API.fetchModels(),
+                    API.fetchSettings()
+                ]);
+                allModels = models;
 
-        function renderOptions(id, data, currentVal) {
-            const sel = document.getElementById(id);
-            sel.innerHTML = '';
-            for (const [provider, models] of Object.entries(data)) {
-                const group = document.createElement('optgroup');
-                group.label = provider.toUpperCase();
-                models.forEach(model => {
-                    const opt = document.createElement('option');
-                    const val = `${provider}:${model}`;
-                    opt.value = val;
-                    opt.textContent = `${provider.toUpperCase()}: ${model}`;
-                    if (val === currentVal) opt.selected = true;
-                    group.appendChild(opt);
-                });
-                sel.appendChild(group);
+                // Setup Sections
+                setupSection('hyde', settings.hyde_enable === 'true', settings.hyde_provider, settings.hyde_model);
+                setupSection('gen', settings.gen_enable === 'true', settings.gen_provider, settings.gen_model);
+
+            } catch (err) {
+                console.error("Init failed:", err);
             }
         }
 
-        document.getElementById('saveSettingsBtn').addEventListener('click', async () => {
-            const settings = {
-                hyde_model: document.getElementById('hydeModelSelect').value,
-                gen_model: document.getElementById('genModelSelect').value
+        function getProviderEmoji(provider) {
+            const emojis = {
+                'gemini': '🤖',
+                'groq': '⚡',
+                'ollama': '🏠',
+                'openrouter': '🌉'
             };
-            await API.saveSettings(settings);
-            alert("บันทึกข้อมูลเรียบร้อยแล้ว!");
+            return emojis[provider.toLowerCase()] || '🧠';
+        }
+
+        function formatName(name) {
+            return name.charAt(0).toUpperCase() + name.slice(1).toLowerCase();
+        }
+
+        function setupSection(prefix, isEnabled, currentProvider, currentModel) {
+            const content = document.getElementById(`${prefix}Content`);
+            const providerSel = document.getElementById(`${prefix}Provider`);
+            const modelSel = document.getElementById(`${prefix}Model`);
+
+            // Populate Providers
+            providerSel.innerHTML = '<option value="">เลือกค่ายโมเดล...</option>';
+            Object.keys(allModels).sort().forEach(p => {
+                const opt = document.createElement('option');
+                opt.value = p;
+                opt.textContent = `${getProviderEmoji(p)} ${formatName(p)}`;
+                if (p === currentProvider) opt.selected = true;
+                providerSel.appendChild(opt);
+            });
+
+            // Handle Provider Change
+            providerSel.addEventListener('change', () => {
+                updateModels(prefix, providerSel.value, null);
+            });
+
+            // Initial models load
+            if (currentProvider) {
+                updateModels(prefix, currentProvider, currentModel);
+            }
+        }
+
+        function updateModels(prefix, provider, selectedModel) {
+            const modelSel = document.getElementById(`${prefix}Model`);
+            modelSel.innerHTML = '<option value="">เลือกโมเดล...</option>';
+            
+            if (provider && allModels[provider]) {
+                allModels[provider].forEach(m => {
+                    const opt = document.createElement('option');
+                    opt.value = m;
+                    opt.textContent = m;
+                    if (m === selectedModel) opt.selected = true;
+                    modelSel.appendChild(opt);
+                });
+            }
+        }
+
+        document.getElementById('saveBtn').addEventListener('click', async () => {
+            const settings = {
+                hyde_enable: "true",
+                hyde_provider: document.getElementById('hydeProvider').value,
+                hyde_model: document.getElementById('hydeModel').value,
+                gen_enable: "true",
+                gen_provider: document.getElementById('genProvider').value,
+                gen_model: document.getElementById('genModel').value
+            };
+
+            try {
+                await API.saveSettings(settings);
+                alert("✨ บันทึกการตั้งค่าเรียบร้อยแล้ว!");
+            } catch (err) {
+                alert("❌ เกิดข้อผิดพลาดในการบันทึก");
+            }
         });
 
-        loadSettings();
+        init();
     </script>
 </body>
 </html>

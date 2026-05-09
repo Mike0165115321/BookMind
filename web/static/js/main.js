@@ -60,8 +60,11 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 async function loadModels() {
     try {
-        const models = await API.fetchModels();
-        renderModelOptions(models);
+        const [models, settings] = await Promise.all([
+            API.fetchModels(),
+            API.fetchSettings()
+        ]);
+        renderModelOptions(models, settings.gen_provider);
     } catch (err) {
         console.error("Failed to load models:", err);
     }
@@ -130,7 +133,7 @@ async function handleSend() {
     UI.elements.queryInput.value = '';
     UI.elements.queryInput.style.height = 'auto';
     
-    const isAgentic = UI.elements.agenticToggle.checked;
+    const isAgentic = UI.elements.agenticToggle ? UI.elements.agenticToggle.checked : false;
     const { contentEl, thoughtEl, messageEl } = UI.addAIMessage(isAgentic);
 
     // Get selected model
@@ -139,7 +142,7 @@ async function handleSend() {
     try {
         const response = await API.ask({
             query,
-            use_hyde: UI.elements.hydeToggle.checked,
+            use_hyde: UI.elements.hydeToggle ? UI.elements.hydeToggle.checked : false,
             mode: isAgentic ? 'agentic' : 'classic',
             provider,
             model,
@@ -168,7 +171,7 @@ async function handleSend() {
     }
 }
 
-function renderModelOptions(data) {
+function renderModelOptions(data, targetProvider = null) {
     const selector = UI.elements.modelSelector;
     if (!selector) return;
 
@@ -176,6 +179,8 @@ function renderModelOptions(data) {
     const sortedProviders = Object.keys(data).sort();
 
     for (const provider of sortedProviders) {
+        if (targetProvider && provider !== targetProvider) continue; // Filter by provider
+
         const models = data[provider];
         if (!models || models.length === 0) continue;
 
@@ -185,7 +190,7 @@ function renderModelOptions(data) {
         models.forEach(model => {
             const opt = document.createElement('option');
             opt.value = `${provider}:${model}`;
-            opt.textContent = `${UI.getProviderEmoji(provider)} ${provider.toUpperCase()}: ${model}`;
+            opt.textContent = `${UI.getProviderEmoji(provider)} ${model}`; // Cleaner look
             group.appendChild(opt);
         });
         selector.appendChild(group);

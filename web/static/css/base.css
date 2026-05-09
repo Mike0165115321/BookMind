@@ -1,9 +1,9 @@
 /* ── Ollama-Inspired Design System ────────────────── */
 :root {
-    --bg-main: #171717;
-    --bg-sidebar: #171717;
-    --bg-input: #212121;
-    --bg-hover: #2f2f2f;
+    --bg-main: #0f111a;      /* Very dark slate */
+    --bg-sidebar: #13151f;   /* Slightly lighter */
+    --bg-input: #1a1d2d;     /* Deep navy/slate */
+    --bg-hover: #242940;     /* Lighter hover state */
     --text-main: #ececec;
     --text-muted: #b4b4b4;
     --border: rgba(255, 255, 255, 0.08);
@@ -36,17 +36,16 @@ body {
     height: 100%;
 }
 
-button {
+button, input, select, textarea {
     font-family: inherit;
+}
+
+button {
     cursor: pointer;
     border: none;
     background: none;
     color: inherit;
     transition: var(--transition);
-}
-
-textarea {
-    font-family: inherit;
 }
 
 /* Scrollbar */

@@ -1,6 +1,7 @@
 import json
 import http.client
 import time
+import os
 from typing import List, Generator, Optional
 from urllib.parse import urlparse
 
@@ -10,11 +11,64 @@ from core.llm.shared.response import LLMResponse, LLMStreamChunk
 from core.llm.ollama.config import ollama_config
 
 class OllamaClient(BaseLLMClient):
+    _cached_host = None
+
     def __init__(self, model_name: Optional[str] = None):
         self.model_name = model_name or ollama_config.default_model
-        url = urlparse(ollama_config.base_url)
-        self.host = url.hostname
-        self.port = url.port or (80 if url.scheme == 'http' else 443)
+        self.port = ollama_config.port # Default 11434
+        self.host = self._get_best_host()
+
+    def _get_best_host(self) -> str:
+        """Try to discover the reachable Ollama host (Local, WSL Host, or Docker Host)."""
+        # 1. Check if we already found a working host
+        if OllamaClient._cached_host:
+            return OllamaClient._cached_host
+
+        # 2. Potential hosts to try
+        potential_hosts = ["localhost", "127.0.0.1"]
+        
+        # Try to find Windows Host IP from WSL using 'ip route'
+        try:
+            import subprocess
+            cmd = "ip route show | grep default | awk '{print $3}'"
+            gw_ip = subprocess.check_output(cmd, shell=True).decode().strip()
+            if gw_ip:
+                potential_hosts.append(gw_ip)
+        except:
+            pass
+
+        # Fallback to nameserver if 'ip route' fails
+        try:
+            if os.path.exists("/etc/resolv.conf"):
+                with open("/etc/resolv.conf", "r") as f:
+                    for line in f:
+                        if "nameserver" in line:
+                            ns_ip = line.split()[1].strip()
+                            if ns_ip not in ["8.8.8.8", "1.1.1.1", "8.8.4.4"]: # Skip public DNS
+                                potential_hosts.append(ns_ip)
+        except:
+            pass
+            
+        potential_hosts.append("host.docker.internal")
+
+        # 3. Test each host
+        print(f"🔍 Ollama Discovery: Testing hosts {potential_hosts}...")
+        for host in potential_hosts:
+            try:
+                # Use a slightly longer timeout and be explicit about the host being tested
+                conn = http.client.HTTPConnection(host, self.port, timeout=1.0)
+                conn.request("GET", "/api/tags")
+                res = conn.getresponse()
+                if res.status == 200:
+                    print(f"✅ Auto-discovered Ollama host: {host}")
+                    OllamaClient._cached_host = host
+                    return host
+            except Exception as e:
+                # print(f"  ❌ Host {host} failed: {e}") # Keep it quiet unless we need deep debug
+                continue
+
+        # 4. Fallback to localhost if all else fails
+        return "localhost"
 
     def _prepare_messages(self, messages: List[Message]):
         return [{"role": m.role, "content": m.content} for m in messages]
@@ -97,7 +151,15 @@ class OllamaClient(BaseLLMClient):
             conn.request("GET", "/api/tags")
             res = conn.getresponse()
             data = json.loads(res.read().decode())
-            return [m["name"] for m in data.get("models", [])]
+            
+            models = []
+            for m in data.get("models", []):
+                name = m["name"].lower()
+                # Exclude embedding models which cannot be used for text generation
+                if "embed" not in name and "bert" not in name:
+                    models.append(m["name"])
+                    
+            return sorted(models)
         except Exception as e:
             print(f"⚠️ Could not list Ollama models: {e}")
             return []

@@ -143,6 +143,24 @@ pip install -r requirements.txt
 
 ---
 
+---
+
+## 🐳 WSL Networking Fix (for Ollama)
+
+หากคุณใช้งานผ่าน **WSL2** และต้องการเชื่อมต่อกับ **Ollama ที่รันบน Windows** คุณอาจพบปัญหา `Connection refused` เนื่องจากการแยก Network ระหว่าง WSL และ Windows
+
+เราได้เตรียมสคริปต์อัตโนมัติเพื่อแก้ปัญหานี้ (ตั้งค่า Environment และ Firewall ในคลิกเดียว):
+
+```bash
+chmod +x fix_ollama_network.sh
+./fix_ollama_network.sh
+```
+
+> [!TIP]
+> อ่านรายละเอียดเชิงลึกและวิธีแก้ปัญหาด้วยตนเองได้ที่: **[Developer Guide: Ollama WSL Fix](docs/DEVELOPER_OLLAMA_FIX.md)**
+
+---
+
 ## 🚀 Quick Start
 
 ### 1. Build Index
