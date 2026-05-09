@@ -1,5 +1,6 @@
 # 📘 เอกสารอธิบายระบบ RAG อย่างละเอียด
-# RAG System — Technical Documentation (v3.0)
+# RAG System — Technical Documentation (v3.5)
+**Developed by [Aetox.dev](https://aetox.dev)**
 
 > เอกสารฉบับนี้อธิบายการทำงานของระบบ RAG (Retrieval-Augmented Generation) **แบบ End-to-End** ทุกขั้นตอน
 > ครอบคลุมตั้งแต่ Query Transform (HyDE), Hybrid Search, Adaptive Reranking, LLM Generation (Gemini), **🧠 Agentic RAG** (Query Decomposition + Multi-hop Retrieval), จนถึง Web UI

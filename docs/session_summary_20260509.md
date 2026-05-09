@@ -1,4 +1,5 @@
 # 📊 Session Summary: 2026-05-09
+**Developed by [Aetox.dev](https://aetox.dev)**
 ## "The Masterpiece Completion" — Version 3.5
 
 วันนี้เป็นการอัปเกรดครั้งใหญ่ที่เน้นความเสถียรของไส้ใน (Logic) และความพรีเมียมของหน้าตา (UI) เพื่อให้ระบบ BookMind เป็น RAG System ที่สมบูรณ์แบบที่สุด

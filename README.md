@@ -2,6 +2,8 @@
 
 ระบบค้นหาและตอบคำถามจากหนังสืออัจฉริยะ ผสม **HyDE Query Transform** + **Hybrid Search** + **Adaptive Reranking** + **Gemini LLM Generation** + **🧠 Agentic RAG** พร้อม **Premium Web UI (Gemini Style)** และระบบจัดการข้อมูลแบบครบวงจร
 
+**Developed by [Aetox.dev](https://aetox.dev)**
+
 > **สถานะ:** ✅ System Stable & Optimized (v3.5)  
 > **Version:** 3.5 — Gemini-style Sidebar + Ingestion Expansion (JSONL/Excel) + Token Efficiency + Performance Monitor
 
