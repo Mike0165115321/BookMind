@@ -17,7 +17,9 @@ export const UI = {
         sourcesList: document.getElementById('sourcesList'),
         historyList: document.getElementById('historyList'),
         newChatBtn: document.getElementById('newChatBtn'),
+        railNewChatBtn: document.getElementById('railNewChatBtn'),
         settingsBtn: document.getElementById('settingsBtn'),
+        railSettingsBtn: document.getElementById('railSettingsBtn'),
         settingsModal: document.getElementById('settingsModal'),
         closeSettings: document.getElementById('closeSettings'),
         saveSettings: document.getElementById('saveSettings'),
@@ -31,6 +33,20 @@ export const UI = {
                 this.elements.sidebar.classList.toggle('collapsed');
             });
         }
+        
+        // Link rail buttons to existing logic
+        if (this.elements.railNewChatBtn && this.elements.newChatBtn) {
+            this.elements.railNewChatBtn.addEventListener('click', () => {
+                this.elements.newChatBtn.click();
+            });
+        }
+        
+        if (this.elements.railSettingsBtn) {
+            this.elements.railSettingsBtn.addEventListener('click', () => {
+                this.showSettings();
+            });
+        }
+
         if (this.elements.sourcesToggle) {
             this.elements.sourcesToggle.addEventListener('click', () => {
                 this.elements.sourcesPanel.classList.toggle('collapsed');

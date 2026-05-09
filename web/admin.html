@@ -5,318 +5,91 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Knowledge Admin | BookMind</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600&family=Noto+Sans+Thai:wght@300;400;600&display=swap" rel="stylesheet">
-    <style>
-        :root {
-            --primary-gradient: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
-            --accent-glow: 0 0 20px rgba(168, 85, 247, 0.4);
-            --bg-dark: #0f172a;
-            --card-bg: rgba(30, 41, 59, 0.7);
-            --glass-border: rgba(255, 255, 255, 0.1);
-            --text-main: #f8fafc;
-            --text-dim: #94a3b8;
-            --success: #10b981;
-            --error: #ef4444;
-            --warning: #f59e0b;
-            --processing: #3b82f6;
-        }
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: 'Outfit', 'Noto Sans Thai', sans-serif;
-        }
-
-        body {
-            background: var(--bg-dark);
-            background-image: 
-                radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.15) 0px, transparent 50%),
-                radial-gradient(at 100% 100%, rgba(168, 85, 247, 0.15) 0px, transparent 50%);
-            color: var(--text-main);
-            min-height: 100vh;
-            overflow-x: hidden;
-        }
-
-        /* Navbar */
-        nav {
-            padding: 1.5rem 2rem;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            backdrop-filter: blur(10px);
-            border-bottom: 1px solid var(--glass-border);
-            position: sticky;
-            top: 0;
-            z-index: 100;
-            background: rgba(15, 23, 42, 0.8);
-        }
-
-        .logo {
-            font-size: 1.5rem;
-            font-weight: 700;
-            background: var(--primary-gradient);
-            -webkit-background-clip: text;
-            background-clip: text;
-            -webkit-text-fill-color: transparent;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .nav-link {
-            color: var(--text-main);
-            text-decoration: none;
-            padding: 0.6rem 1.2rem;
-            border-radius: 12px;
-            background: rgba(255, 255, 255, 0.05);
-            transition: all 0.3s ease;
-            font-size: 0.9rem;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            border: 1px solid var(--glass-border);
-        }
-
-        .nav-link:hover {
-            background: rgba(255, 255, 255, 0.1);
-            transform: translateY(-2px);
-            box-shadow: var(--accent-glow);
-        }
-
-        .container {
-            max-width: 1100px;
-            margin: 3rem auto;
-            padding: 0 2rem;
-        }
-
-        /* Glass Card */
-        .glass-card {
-            background: var(--card-bg);
-            backdrop-filter: blur(12px);
-            border-radius: 24px;
-            border: 1px solid var(--glass-border);
-            padding: 2.5rem;
-            margin-bottom: 2.5rem;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-        }
-
-        h2 {
-            font-size: 1.8rem;
-            margin-bottom: 1.5rem;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-
-        h2 i {
-            color: #a855f7;
-        }
-
-        /* Form Styling */
-        .upload-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 1.5rem;
-            margin-top: 2rem;
-        }
-
-        .form-group {
-            margin-bottom: 1.5rem;
-        }
-
-        label {
-            display: block;
-            margin-bottom: 0.6rem;
-            color: var(--text-dim);
-            font-size: 0.9rem;
-        }
-
-        input[type="text"], input[type="file"] {
-            width: 100%;
-            padding: 1rem;
-            background: rgba(15, 23, 42, 0.6);
-            border: 1px solid var(--glass-border);
-            border-radius: 14px;
-            color: white;
-            outline: none;
-            transition: border-color 0.3s;
-        }
-
-        input[type="text"]:focus {
-            border-color: #a855f7;
-        }
-
-        .btn-prime {
-            background: var(--primary-gradient);
-            color: white;
-            border: none;
-            padding: 1.2rem 2rem;
-            border-radius: 16px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            width: 100%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-            font-size: 1rem;
-            margin-top: 1rem;
-        }
-
-        .btn-prime:hover {
-            transform: scale(1.02);
-            box-shadow: var(--accent-glow);
-            filter: brightness(1.1);
-        }
-
-        .btn-prime:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-        }
-
-        /* Table Styling */
-        .table-container {
-            overflow-x: auto;
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 1rem;
-        }
-
-        th {
-            text-align: left;
-            padding: 1.2rem;
-            color: var(--text-dim);
-            font-weight: 400;
-            font-size: 0.85rem;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            border-bottom: 1px solid var(--glass-border);
-        }
-
-        td {
-            padding: 1.2rem;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.03);
-            font-size: 0.95rem;
-        }
-
-        tr:hover td {
-            background: rgba(255, 255, 255, 0.02);
-        }
-
-        .badge {
-            padding: 4px 12px;
-            border-radius: 20px;
-            background: rgba(168, 85, 247, 0.1);
-            color: #d8b4fe;
-            font-size: 0.8rem;
-            border: 1px solid rgba(168, 85, 247, 0.2);
-        }
-
-        .status-pill {
-            padding: 6px 14px;
-            border-radius: 20px;
-            font-size: 0.75rem;
-            font-weight: 600;
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-        }
-
-        .status-completed { background: rgba(16, 185, 129, 0.15); color: #34d399; }
-        .status-processing { background: rgba(59, 130, 246, 0.15); color: #60a5fa; }
-        .status-error { background: rgba(239, 68, 68, 0.15); color: #f87171; }
-        .status-waiting { background: rgba(148, 163, 184, 0.15); color: #cbd5e1; }
-
-        .actions {
-            display: flex;
-            gap: 10px;
-        }
-
-        .action-btn {
-            width: 38px;
-            height: 38px;
-            border-radius: 10px;
-            border: 1px solid var(--glass-border);
-            background: rgba(255, 255, 255, 0.05);
-            color: var(--text-dim);
-            cursor: pointer;
-            transition: all 0.2s;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .action-btn:hover {
-            color: white;
-            background: rgba(255, 255, 255, 0.15);
-        }
-
-        .btn-retry:hover { color: var(--processing); border-color: var(--processing); }
-        .btn-delete:hover { color: var(--error); border-color: var(--error); }
-
-        @keyframes pulse {
-            0% { opacity: 1; }
-            50% { opacity: 0.5; }
-            100% { opacity: 1; }
-        }
-
-        .animate-pulse { animation: pulse 1.5s infinite; }
-    </style>
+    <!-- Fonts & Icons -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- CSS Modules -->
+    <link rel="stylesheet" href="/static/css/base.css?v=3">
+    <link rel="stylesheet" href="/static/css/layout.css?v=3">
+    <link rel="stylesheet" href="/static/css/admin.css?v=3">
 </head>
-<body>
-
-    <nav>
-        <div class="logo">
-            <i class="fas fa-brain"></i> BookMind Intelligence
-        </div>
-        <a href="/" class="nav-link">
-            <i class="fas fa-comment-dots"></i> กลับหน้าแชท
-        </a>
-    </nav>
-
-    <div class="container">
-        <div class="glass-card">
-            <h2><i class="fas fa-cloud-upload-alt"></i> Knowledge Ingestion</h2>
-            <p style="color: var(--text-dim); margin-bottom: 2rem;">เพิ่มฐานข้อมูลใหม่ให้ AI ของคุณ (รองรับ PDF, DOCX, PPTX, Excel, CSV, HTML, JSON, MD, SVG)</p>
-            
-            <form id="uploadForm">
-                <div class="form-group">
-                    <label>เลือกเอกสาร</label>
-                    <input type="file" id="fileInput" accept=".pdf,.docx,.doc,.pptx,.xlsx,.xls,.csv,.txt,.jsonl,.json,.md,.markdown,.svg,.html,.htm" multiple required>
+<body class="theme-dark">
+    <div class="app-wrapper">
+        <!-- ── Sidebar ── -->
+        <aside class="sidebar collapsed" id="sidebar">
+            <div class="sidebar-rail">
+                <div class="rail-top">
+                    <a href="/" class="icon-btn" title="Back to Chat">
+                        <i class="fas fa-comment-dots"></i>
+                    </a>
                 </div>
-                
-                <div class="upload-grid">
-                    <div class="form-group">
-                        <label>ชื่อหนังสือ (เว้นว่างไว้เพื่อใช้ชื่อไฟล์)</label>
-                        <input type="text" id="bookTitle" placeholder="เช่น Atomic Habits">
-                    </div>
-                    <div class="form-group">
-                        <label>หมวดหมู่</label>
-                        <input type="text" id="category" placeholder="เช่น การตลาด, พัฒนาตัวเอง">
-                    </div>
+                <div class="rail-bottom">
+                    <a href="/settings" class="icon-btn" title="Settings">
+                        <i class="fas fa-cog"></i>
+                    </a>
+                </div>
+            </div>
+            <!-- Panel is hidden in collapsed mode by default -->
+        </aside>
+
+        <!-- ── Main Content ── -->
+        <main class="main-content" style="overflow-y: auto;">
+            <div class="admin-container">
+                <header class="admin-header">
+                    <h1>แผงควบคุมระบบ</h1>
+                    <p>จัดการฐานข้อมูลความรู้สำหรับ AI Intelligence</p>
+                </header>
+
+                <div class="glass-card">
+                    <h2 style="font-size: 18px; margin-bottom: 20px;"><i class="fas fa-cloud-upload-alt" style="color: var(--blue-light); margin-right: 10px;"></i> นำเข้าข้อมูล (Ingestion)</h2>
+                    
+                    <form id="uploadForm">
+                        <div class="form-group">
+                            <label>เลือกเอกสาร (PDF, DOCX, MD, etc.)</label>
+                            <input type="file" id="fileInput" class="admin-input" style="padding: 30px; border: 2px dashed var(--border); background: rgba(255,255,255,0.01);" multiple required>
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>ชื่อเรียกหนังสือ (เว้นว่างเพื่อใช้ชื่อไฟล์)</label>
+                                <input type="text" id="bookTitle" class="admin-input" placeholder="เช่น คู่มือพนักงาน 2024">
+                            </div>
+                            <div class="form-group">
+                                <label>หมวดหมู่</label>
+                                <input type="text" id="category" class="admin-input" placeholder="เช่น การเงิน, กฎหมาย">
+                            </div>
+                        </div>
+
+                        <button type="submit" id="uploadBtn" class="btn-submit">
+                            <i class="fas fa-plus-circle"></i> เริ่มการสร้างเวกเตอร์ (Index Data)
+                        </button>
+                    </form>
                 </div>
 
-                <button type="submit" id="uploadBtn" class="btn-prime">
-                    <i class="fas fa-plus-circle"></i> เริ่มการสร้างเวกเตอร์
-                </button>
-            </form>
-        </div>
-
-        <div class="glass-card">
-            <h2><i class="fas fa-database"></i> คลังความรู้ปัจจุบัน</h2>
-            <div class="table-container">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>ชื่อไฟล์</th>
-                            <th>ชื่อหนังสือ</th>
-                            <th>หมวดหมู่</th>
-                            <th>สถานะ</th>
+                <div class="glass-card">
+                    <h2 style="font-size: 18px; margin-bottom: 20px;"><i class="fas fa-database" style="color: var(--blue-light); margin-right: 10px;"></i> รายการเอกสารในระบบ</h2>
+                    <div class="table-wrapper">
+                        <table class="admin-table">
+                            <thead>
+                                <tr>
+                                    <th>ชื่อไฟล์</th>
+                                    <th>ชื่อหนังสือ</th>
+                                    <th>หมวดหมู่</th>
+                                    <th>สถานะ</th>
+                                    <th>Chunks</th>
+                                    <th>จัดการ</th>
+                                </tr>
+                            </thead>
+                            <tbody id="docTableBody">
+                                <!-- Documents will load here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>                        <th>สถานะ</th>
                             <th>Chunks</th>
                             <th>จัดการ</th>
                         </tr>

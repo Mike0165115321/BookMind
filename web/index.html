@@ -21,33 +21,51 @@
     <div class="app-wrapper">
         <!-- ── Sidebar ── -->
         <aside class="sidebar" id="sidebar">
-            <div class="sidebar-brand" style="padding: 20px 20px 10px; display: flex; flex-direction: column; gap: 2px;">
-                <span style="font-weight: 700; font-size: 20px; letter-spacing: -0.5px; color: var(--text-main);">BookMind</span>
-                <span style="font-size: 10px; color: var(--blue-light); opacity: 0.8; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">by Aetox.dev</span>
-            </div>
-
-            <div class="sidebar-header" style="padding: 10px 16px; margin-bottom: 12px;">
-                <button class="new-chat-btn" id="newChatBtn">
-                    <i class="far fa-edit"></i>
-                    <span>แชทใหม่</span>
-                </button>
-            </div>
-            
-            <div class="history-section" style="flex: 1; overflow-y: auto;">
-                <div id="historyList" class="history-list">
-                    <!-- History items will be loaded from DB -->
+            <!-- Sidebar Rail (Always visible narrow column) -->
+            <div class="sidebar-rail">
+                <div class="rail-top">
+                    <button class="icon-btn" id="sidebarToggle" title="Menu">
+                        <i class="fas fa-bars"></i>
+                    </button>
+                    <button class="icon-btn rail-new-chat" id="railNewChatBtn" title="แชทใหม่">
+                        <i class="far fa-edit"></i>
+                    </button>
+                </div>
+                <div class="rail-bottom">
+                    <button class="icon-btn" id="railSettingsBtn" title="ตั้งค่า">
+                        <i class="fas fa-cog"></i>
+                    </button>
                 </div>
             </div>
 
-            <div class="sidebar-actions" style="margin-top: auto; padding-top: 16px; border-top: 1px solid var(--border);">
-                <a href="/admin" class="nav-item">
-                    <i class="fas fa-rocket"></i>
-                    <span>เพิ่มข้อมูล</span>
-                </a>
-                <a href="/settings" class="nav-item">
-                    <i class="fas fa-cog"></i>
-                    <span>ตั้งค่า</span>
-                </a>
+            <!-- Sidebar Panel (Expandable content) -->
+            <div class="sidebar-panel">
+                <div class="sidebar-brand">
+                    <div class="brand-info">
+                        <span class="brand-name">BookMind</span>
+                        <span class="brand-sub">by Aetox.dev</span>
+                    </div>
+                </div>
+
+                <div class="sidebar-header">
+                    <button class="new-chat-btn" id="newChatBtn">
+                        <i class="far fa-edit"></i>
+                        <span>แชทใหม่</span>
+                    </button>
+                </div>
+                
+                <div class="history-section">
+                    <div id="historyList" class="history-list">
+                        <!-- History items will be loaded from DB -->
+                    </div>
+                </div>
+
+                <div class="sidebar-footer">
+                    <a href="/admin" class="nav-item">
+                        <i class="fas fa-rocket"></i>
+                        <span>แผงควบคุม</span>
+                    </a>
+                </div>
             </div>
         </aside>
 

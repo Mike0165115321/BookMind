@@ -134,13 +134,29 @@ class OllamaClient(BaseLLMClient):
             conn.request("POST", "/api/chat", json.dumps(payload), {"Content-Type": "application/json"})
             res = conn.getresponse()
             
+            if res.status != 200:
+                error_text = res.read().decode()
+                try:
+                    err_json = json.loads(error_text)
+                    msg = err_json.get("error", error_text)
+                except:
+                    msg = error_text
+                yield LLMStreamChunk(text=f"\n⚠️ Ollama API Error ({res.status}): {msg}", is_last=True)
+                return
+
             for line in res:
                 if line:
-                    chunk_data = json.loads(line.decode())
-                    if "message" in chunk_data:
-                        yield LLMStreamChunk(text=chunk_data["message"]["content"])
-                    if chunk_data.get("done"):
-                        break
+                    try:
+                        chunk_data = json.loads(line.decode())
+                        if "error" in chunk_data:
+                            yield LLMStreamChunk(text=f"\n⚠️ Ollama Error: {chunk_data['error']}", is_last=True)
+                            break
+                        if "message" in chunk_data:
+                            yield LLMStreamChunk(text=chunk_data["message"]["content"])
+                        if chunk_data.get("done"):
+                            break
+                    except Exception as parse_err:
+                        continue
         except Exception as e:
             yield LLMStreamChunk(text=f"\n❌ Ollama Error: {str(e)}", is_last=True)
 

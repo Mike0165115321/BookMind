@@ -19,16 +19,13 @@ def _build_context(search_results: list) -> str:
 
 def _build_prompt(query: str, context: str) -> str:
     """Build the user prompt combining query and retrieved context."""
-    return f"""คำถาม: {query}
-
-ข้อมูลอ้างอิง:
+    return f"""ข้อมูลอ้างอิง:
 {context}
 
-จากข้อมูลอ้างอิงข้างต้น:
-- ตอบคำถามอย่างละเอียดและอ้างอิงแหล่งที่มา
-- ถ้าเป็นคำถามเปรียบเทียบ: วิเคราะห์จุดเหมือน/ต่าง + สังเคราะห์เป็น framework ใหม่
-- ถ้าเป็นคำถามเชิงกลยุทธ์: ให้ actionable steps + trade-offs + risk
-- อย่าแค่สรุปแต่ละแหล่งแยกกัน → ต้องสังเคราะห์ข้ามแนวคิดให้เป็นคำตอบเดียวที่เชื่อมโยงกัน"""
+---
+คำถามของผู้ใช้: {query}
+
+(ใช้ข้อมูลอ้างอิงข้างต้นในการตอบตามหลักการที่คุณได้รับมอบหมาย)"""
 
 def generate(
     query: str, 
