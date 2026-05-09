@@ -1,22 +1,5 @@
-"""
-Query Transformer — HyDE (Hypothetical Document Embedding) via Groq.
-
-HyDE Concept:
-  Instead of searching with the raw query, we ask an LLM to "imagine"
-  a hypothetical answer, then use THAT as the search query.
-  This bridges the vocabulary gap between questions and documents.
-
-  User: "วิธีตื่นเช้า"
-   → LLM generates: "การตื่นเช้าสามารถทำได้โดยนอนให้เป็นเวลา ตั้งนาฬิกาปลุก..."
-   → Search with the hypothetical doc → finds real matching documents!
-
-This module uses Groq (LLaMA 3.3 70B) for fast HyDE generation.
-Retrieval is handled separately by rag_searcher.py.
-"""
-from groq import Groq
-from core.config import settings
-from core.key_manager import groq_key_manager
-
+from core.llm.manager import llm_manager
+from core.llm.shared.types import Message, ProviderName, GenerationConfig
 
 # ──────────────────────────────────────────────
 # HyDE Prompt Template
@@ -34,7 +17,7 @@ HYDE_SYSTEM_PROMPT = """คุณกำลังสร้างคำตอบ�
 
 รูปแบบผลลัพธ์:
 - นิยามแนวคิด (Concept Definition)
-- อธิบายกลไก (Mechanism Explanation)
+- อธิบายกลกลไก (Mechanism Explanation)
 - นัยเชิงปฏิบัติ (Practical Implication)
 
 น้ำเสียงควรเหมือนหนังสือแนะนำเชิงจริงจัง"""
@@ -46,73 +29,45 @@ QUERY_REWRITE_SYSTEM_PROMPT = """คุณเป็น AI ที่ช่วย�
 3. ยังคงความหมายเดิม
 ตอบเป็นคำค้นหาใหม่เพียงประโยคเดียว ไม่ต้องอธิบาย"""
 
-
-def _get_groq_client() -> Groq:
-    """Create a Groq client with the next API key from rotation."""
-    api_key = groq_key_manager.get_key()
-    if not api_key:
-        raise RuntimeError("❌ ไม่มี API key สำหรับ Groq — กรุณาตั้งค่าใน .env")
-    return Groq(api_key=api_key)
-
-
-def hyde_transform(query: str) -> str:
+def hyde_transform(query: str, provider: ProviderName = ProviderName.GROQ, model_name: str = None) -> str:
     """
-    HyDE: Generate a hypothetical document for the given query.
-
-    Instead of searching with "วิธีสร้างนิสัย", we generate a fake answer
-    that looks like real document content, then search with THAT.
-
-    Args:
-        query: Original user query
-
-    Returns:
-        Hypothetical document text to use as search query
+    HyDE: Generate a hypothetical document via llm_manager.
     """
     try:
-        client = _get_groq_client()
-        response = client.chat.completions.create(
-            model=settings.GROQ_MODEL,
-            messages=[
-                {"role": "system", "content": HYDE_SYSTEM_PROMPT},
-                {"role": "user", "content": f"คำถาม: {query}"},
-            ],
-            max_tokens=settings.GROQ_MAX_TOKENS,
-            temperature=settings.GROQ_TEMPERATURE,
-        )
-        hypothetical_doc = response.choices[0].message.content.strip()
-        print(f"   🪄 HyDE: generated hypothetical doc ({len(hypothetical_doc)} chars)")
-        return hypothetical_doc
+        messages = [
+            Message(role="system", content=HYDE_SYSTEM_PROMPT),
+            Message(role="user", content=f"คำถาม: {query}")
+        ]
+        
+        # Use a higher temperature for creativity in HyDE
+        config = GenerationConfig(temperature=0.7, max_tokens=512)
+        
+        response = llm_manager.generate(provider, messages, model_name=model_name, config=config)
+        
+        print(f"   🪄 HyDE: generated via {response.provider} ({response.model_name}) in {response.latency_ms:.2f}ms")
+        return response.text
 
     except Exception as e:
-        print(f"   ⚠️  HyDE failed ({e}), using original query")
+        print(f"   ⚠️ HyDE failed ({e}), using original query")
         return query
 
-
-def rewrite_query(query: str) -> str:
+def rewrite_query(query: str, provider: ProviderName = ProviderName.GROQ, model_name: str = None) -> str:
     """
-    Query Rewriting: Expand and clarify the query.
-
-    Args:
-        query: Original user query
-
-    Returns:
-        Rewritten query with more context
+    Query Rewriting: Expand and clarify the query via llm_manager.
     """
     try:
-        client = _get_groq_client()
-        response = client.chat.completions.create(
-            model=settings.GROQ_MODEL,
-            messages=[
-                {"role": "system", "content": QUERY_REWRITE_SYSTEM_PROMPT},
-                {"role": "user", "content": f"คำถาม: {query}"},
-            ],
-            max_tokens=128,
-            temperature=0.3,
-        )
-        rewritten = response.choices[0].message.content.strip()
-        print(f"   🔀 Rewrite: \"{query}\" → \"{rewritten}\"")
-        return rewritten
+        messages = [
+            Message(role="system", content=QUERY_REWRITE_SYSTEM_PROMPT),
+            Message(role="user", content=f"คำถาม: {query}")
+        ]
+        
+        config = GenerationConfig(temperature=0.3, max_tokens=128)
+        
+        response = llm_manager.generate(provider, messages, model_name=model_name, config=config)
+        
+        print(f"   🔀 Rewrite: \"{query}\" → \"{response.text}\" (via {response.provider})")
+        return response.text
 
     except Exception as e:
-        print(f"   ⚠️  Rewrite failed ({e}), using original query")
+        print(f"   ⚠️ Rewrite failed ({e}), using original query")
         return query

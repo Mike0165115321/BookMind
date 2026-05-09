@@ -1,13 +1,6 @@
-"""
-LLM Generator — High-level API for generating answers from retrieved context.
-
-Coordinates building context/prompt and calling the LLM provider.
-"""
 from core.prompts.prompt_registry import registry
-from core.llm.gemini_provider import GeminiProvider
-
-# Default provider
-default_provider = GeminiProvider()
+from core.llm.manager import llm_manager
+from core.llm.shared.types import Message, ProviderName, GenerationConfig
 
 def _build_context(search_results: list) -> str:
     """Build context string from search results with document name labels."""
@@ -16,12 +9,10 @@ def _build_context(search_results: list) -> str:
 
     context_parts = []
     for text, score in search_results:
-        # Extract document title from the [Title] prefix
         doc_name = "ไม่ระบุ"
         if text.startswith("[") and "]" in text:
             doc_name = text.split("]")[0].lstrip("[")
         
-        # Simple citation label as requested by USER
         context_parts.append(f"(จาก: {doc_name})\n{text}")
 
     return "\n\n---\n\n".join(context_parts)
@@ -39,12 +30,16 @@ def _build_prompt(query: str, context: str) -> str:
 - ถ้าเป็นคำถามเชิงกลยุทธ์: ให้ actionable steps + trade-offs + risk
 - อย่าแค่สรุปแต่ละแหล่งแยกกัน → ต้องสังเคราะห์ข้ามแนวคิดให้เป็นคำตอบเดียวที่เชื่อมโยงกัน"""
 
-def generate(query: str, search_results: list, stream: bool = False, provider=None):
+def generate(
+    query: str, 
+    search_results: list, 
+    stream: bool = False, 
+    provider: ProviderName = ProviderName.GEMINI,
+    model_name: str = None
+):
     """
-    Generate an answer using the provided LLM provider (defaults to Gemini).
+    Generate an answer using the llm_manager.
     """
-    provider = provider or default_provider
-    
     # 1. Load system prompt from registry
     system_prompt = registry.get("rag_system")
     
@@ -52,8 +47,14 @@ def generate(query: str, search_results: list, stream: bool = False, provider=No
     context = _build_context(search_results)
     prompt = _build_prompt(query, context)
     
-    # 3. Call provider
+    # 3. Create Message objects
+    messages = [
+        Message(role="system", content=system_prompt),
+        Message(role="user", content=prompt)
+    ]
+    
+    # 4. Call llm_manager
     if stream:
-        return provider.generate_stream(prompt, system_instruction=system_prompt)
+        return llm_manager.generate_stream(provider, messages, model_name=model_name)
     else:
-        return provider.generate(prompt, system_instruction=system_prompt)
+        return llm_manager.generate(provider, messages, model_name=model_name)
