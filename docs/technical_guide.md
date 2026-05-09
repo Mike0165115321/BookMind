@@ -135,11 +135,18 @@ Embedding model (e5-large) ทำงานได้ดีที่สุดก�
     └──────────────────────────────────┘
 ```
 
-### ลำดับการตัด
+### Chunking Strategy: Iterative Sliding Window (v3.5)
 
-1. **ตัดที่ย่อหน้า (`\n`)** — ธรรมชาติที่สุด ไม่ตัดกลางความคิด
-2. **ตัดที่จุดจบประโยค (`.` `。` `!` `?`)** — ถ้าย่อหน้าเดียวยาวเกิน
-3. **ตัดตามจำนวนตัวอักษร** — ทางเลือกสุดท้าย ถ้าไม่มีจุดตัดธรรมชาติ
+เพื่อให้ข้อมูลถูกเก็บครบ 100% ระบบได้อัปเกรดเป็นเทคนิค **Iterative Sliding Window** (ขยับหน้าต่างทีละ 400 chars, overlap 100)
+
+1. **Window-based**: แบ่งเนื้อหาเป็นหน้าต่างขนาด 500 ตัวอักษร
+2. **Iterative Step**: เมื่อจบ Chunk ระบบจะขยับไปข้างหน้าเพียง 400 ตัวอักษร (Overlap 100)
+3. **No Truncation**: ทำซ้ำไปเรื่อยๆ จนถึงตัวอักษรสุดท้าย การันตีว่าไม่มีข้อความส่วนไหนถูกตัดทิ้ง
+
+### ลำดับการเลือกจุดตัด (Inside Window):
+1. **ตัดที่ย่อหน้า (`\n`)** — รักษาบริบทได้ดีที่สุด
+2. **ตัดที่จุดจบประโยค (`.` `。` `!` `?`)** — ถ้าย่อหน้ายาวเกินไป
+3. **ตัดตามจำนวนตัวอักษร** — ทางเลือกสุดท้าย (Hard-cut) หากไม่พบจุดตัดธรรมชาติภายในระยะที่กำหนด
 
 ### Overlap คืออะไร?
 
@@ -688,10 +695,14 @@ graph LR
     SERVICE --> AGENTIC[core/agentic/engine]
     SERVICE --> GENERATOR[core/llm/generator]
     GENERATOR --> PROMPT[core/prompts/registry]
-    GENERATOR --> PROVIDER[core/llm/gemini_provider]
+    GENERATOR --> MANAGER[core/llm/manager]
+    MANAGER --> OLLAMA[Ollama]
+    MANAGER --> GEMINI[Gemini]
+    MANAGER --> GROQ[Groq]
 ```
 
 **หลักการออกแบบ:**
+- **Model Independence (Agnostic):** ระบบไม่ได้ผูกติดกับโมเดลเดียว มี `llm_manager` ทำหน้าที่เป็น Gateway เชื่อมต่อได้ทุกค่าย
 - **Separation of Concerns:** แยก API, Business Logic, และ Data Access ออกจากกันเด็ดขาด
 - **Modularity:** แต่ละโฟลเดอร์ทำงานเฉพาะด้าน สามารถเปลี่ยนโมดูลหนึ่งโดยไม่กระทบส่วนอื่น
 - **Single Responsibility:** หนึ่งไฟล์ทำหน้าที่เพียงอย่างเดียว (เช่น `engine.py` คิดอย่างเดียว ไม่ยุ่งกับ UI)
@@ -958,7 +969,7 @@ Hybrid Search → Adaptive Reranking → Results
 
 ---
 
-## 11. LLM Generation — Gemini
+## 11. Multi-Provider LLM Generation — Gemini, Ollama, Groq
 
 ### หน้าที่
 
@@ -970,12 +981,18 @@ Hybrid Search → Adaptive Reranking → Results
 
 | Component | รายละเอียด |
 |-----------|----------|
-| Model | Gemini 2.5 Flash |
-| Temperature | 0.3 (ตอบชัด ไม่เพ้อ) |
-| Prompt | โหลดจาก `core/prompts/rag_system.txt` ผ่าน Registry |
-| Provider Layer | จัดการ API Call, Key Rotation, และ Retry logic แยกส่วน |
-| Streaming | SSE (Server-Sent Events) real-time |
-| Key Rotation | Round-robin 10 keys (ผ่าน KeyManager) |
+| **Gemini (Google)** | โมเดลหลักสำหรับการตอบคำถามทั่วไป (Fast & Accurate) |
+| **Ollama (Local)** | สำหรับรันโมเดลในเครื่อง (เช่น qwen, llama) เพื่อความปลอดภัยสูงสุด |
+| **Groq (Llama)** | สำหรับงานที่ต้องการ Low-latency สูงสุด เช่น HyDE |
+| Temperature | 0.3 (สำหรับการตอบคำถาม) / 0.7 (สำหรับการทำ HyDE) |
+| Prompt | โหลดจาก `core/prompts/*.txt` ผ่าน Prompt Registry |
+| Key Rotation | จัดการ API Keys แบบ Round-robin อัตโนมัติ |
+
+### 💡 Token Efficiency & Conciseness (v3.5)
+เราปรับจูนการสร้างคำตอบให้ประหยัดโทเค็นและรวดเร็วขึ้น:
+1. **Adaptive Conciseness**: ถ้าคำถามง่าย AI จะตอบสั้นทันที (1-3 ประโยค) โดยไม่ทวนคำถาม
+2. **No Fluff Policy**: ตัดคำเกริ่นและคำเชื่อมที่ฟุ่มเฟือยออกทั้งหมด
+3. **Token Capping**: กำหนดเพดานความยาวคำตอบให้เหมาะสมกับระดับความซับซ้อนของคำถาม
 
 ### 🎓 Deep Dive: Temperature คืออะไร?
 
@@ -1050,7 +1067,10 @@ query + search_results
 core/
 ├── retrieval/          🔍 Modular Retrieval Pipeline (Search/Rerank)
 ├── agentic/            🧠 Agentic Reasoning Engine (Decompose/Eval)
-├── llm/                🤖 LLM Providers & Generation Logic
+├── llm/                🤖 LLM Multi-Provider Architecture
+│   ├── manager.py      ✨ หัวใจหลักในการสลับ Provider (Ollama/Gemini/Groq)
+│   ├── generator.py    API ระดับสูงสำหรับสร้างคำตอบ
+│   └── shared/         Types และ Base Classes ที่ใช้ร่วมกัน
 ├── prompts/            📜 Prompt Registry & .txt templates
 ├── config.py           🔐 Environment & Key loading (Singleton)
 ├── key_manager.py      🔑 Round-robin API key rotation
@@ -1133,11 +1153,14 @@ Web UI ถูกแยกเป็นสัดส่วนโดยใช้ Fas
 
 ### Technical Stack
 
-| Component | Technology |
-|-----------|----------|
-| Backend | FastAPI + uvicorn |
-| Streaming | SSE (Server-Sent Events) via sse-starlette |
 | Frontend | Vanilla HTML/CSS/JS |
+
+### 🎨 Premium UI Layout (v3.5)
+หน้าตาของระบบถูกยกระดับสู่มาตรฐาน **Gemini Design Language**:
+1. **Sidebar Rail & Panel**: แยกส่วนของเมนูหลัก (Icon-only) และส่วนขยายเนื้อหา (เช่น ประวัติการแชท) เพื่อเพิ่มพื้นที่ใช้งานสูงสุด
+2. **Harmonized Admin Panel**: หน้าจัดการข้อมูลถูกปรับจูนให้เป็นธีมเดียวกับหน้าแชท (Navy/Slate) ทำให้ผู้ใช้รู้สึกถึงความเป็นแอปพลิเคชันที่ต่อเนื่อง
+3. **Glassmorphism & Micro-animations**: ใช้เอฟเฟกต์โปร่งแสงและแอนิเมชันขนาดเล็กในการเปลี่ยนผ่านหน้าจอ เพื่อความพรีเมียมและลื่นไหล
+4. **Responsive Flexbox**: เลย์เอาต์ที่ยืดหยุ่น รองรับการย่อ/ขยายหน้าจอ และการใช้งานบนอุปกรณ์ต่างๆ ได้อย่างสมบูรณ์แบบ
 | Markdown | marked.js |
 | Design | Dark theme + glassmorphism + Inter font |
 

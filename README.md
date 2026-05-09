@@ -1,9 +1,9 @@
 # 📚 RAG System — Full Pipeline Knowledge Base
 
-ระบบค้นหาและตอบคำถามจากหนังสืออัจฉริยะ ผสม **HyDE Query Transform** + **Hybrid Search** + **Adaptive Reranking** + **Gemini LLM Generation** + **🧠 Agentic RAG** (Query Decomposition & Multi-hop Retrieval) พร้อม **Web UI** แบบ real-time streaming
+ระบบค้นหาและตอบคำถามจากหนังสืออัจฉริยะ ผสม **HyDE Query Transform** + **Hybrid Search** + **Adaptive Reranking** + **Gemini LLM Generation** + **🧠 Agentic RAG** พร้อม **Premium Web UI (Gemini Style)** และระบบจัดการข้อมูลแบบครบวงจร
 
-> **สถานะ:** ✅ Full RAG Pipeline + Agentic RAG สมบูรณ์ (v3.0)  
-> **Version:** 3.0 — Agentic RAG + HyDE + Hybrid Search + Adaptive Reranking + Gemini Generation + Web UI
+> **สถานะ:** ✅ System Stable & Optimized (v3.5)  
+> **Version:** 3.5 — Gemini-style Sidebar + Ingestion Expansion (JSONL/Excel) + Token Efficiency + Performance Monitor
 
 📘 **[เอกสารเทคนิคฉบับเต็ม (Technical Guide)](docs/technical_guide.md)**
 
