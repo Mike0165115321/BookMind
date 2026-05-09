@@ -46,8 +46,11 @@
                     
                     <form id="uploadForm">
                         <div class="form-group">
-                            <label>เลือกเอกสาร (PDF, DOCX, MD, etc.)</label>
-                            <input type="file" id="fileInput" class="admin-input" style="padding: 30px; border: 2px dashed var(--border); background: rgba(255,255,255,0.01);" multiple required>
+                            <label>เลือกเอกสาร (PDF, DOCX, JSON, JSONL, MD, CSV, Excel, PPTX)</label>
+                            <input type="file" id="fileInput" class="admin-input" 
+                                   accept=".pdf,.docx,.doc,.pptx,.xlsx,.xls,.csv,.txt,.jsonl,.json,.md,.markdown,.svg,.html,.htm" 
+                                   style="padding: 30px; border: 2px dashed var(--border); background: rgba(255,255,255,0.01);" 
+                                   multiple required>
                         </div>
                         
                         <div class="form-row">
