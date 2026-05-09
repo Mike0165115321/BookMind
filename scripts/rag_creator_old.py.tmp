@@ -22,46 +22,27 @@ class TextChunker:
     def chunk(self, text, metadata_prefix=""):
         if not text.strip(): return []
         
-        # 1. Normalize and split into paragraphs
+        # If prefix is not already in the text, prepend it
+        full_text = text
+        
+        # Simple chunking logic (similar to original but cleaned up)
         paragraphs = [p.strip() for p in text.split("\n") if p.strip()]
         chunks = []
-        current_chunk_text = ""
+        current_chunk = ""
 
         for para in paragraphs:
-            # Handle exceptionally long paragraphs by splitting them into sub-paragraphs with overlap
-            sub_paras = []
-            if len(para) > self.chunk_size:
-                temp_p = para
-                while len(temp_p) > self.chunk_size:
-                    # Take a slice of chunk_size
-                    sub_paras.append(temp_p[:self.chunk_size])
-                    # Move forward but keep the overlap
-                    temp_p = temp_p[self.chunk_size - self.chunk_overlap:]
-                if temp_p:
-                    sub_paras.append(temp_p)
-            else:
-                sub_paras = [para]
-                
-            # Process each sub-paragraph (or the original paragraph)
-            for p in sub_paras:
-                if not current_chunk_text:
-                    current_chunk_text = p
-                elif len(current_chunk_text) + len(p) + 1 <= self.chunk_size:
-                    current_chunk_text += "\n" + p
+            if len(current_chunk) + len(para) + 1 > self.chunk_size:
+                if current_chunk:
+                    chunks.append(f"{metadata_prefix}\n{current_chunk}".strip() if metadata_prefix else current_chunk)
+                    current_chunk = current_chunk[-self.chunk_overlap:] + "\n" + para
                 else:
-                    # Current chunk is full, save it
-                    full_text = f"{metadata_prefix}\n{current_chunk_text}".strip() if metadata_prefix else current_chunk_text
-                    chunks.append(full_text)
-                    
-                    # Start new chunk with overlap from the END of the previous chunk text
-                    overlap_text = current_chunk_text[-self.chunk_overlap:] if self.chunk_overlap > 0 else ""
-                    current_chunk_text = (overlap_text + "\n" + p).strip() if overlap_text else p
-                    
-        # Don't forget the last buffer
-        if current_chunk_text:
-            full_text = f"{metadata_prefix}\n{current_chunk_text}".strip() if metadata_prefix else current_chunk_text
-            chunks.append(full_text)
-            
+                    # Paragraph itself is too long
+                    chunks.append(f"{metadata_prefix}\n{para[:self.chunk_size]}".strip() if metadata_prefix else para[:self.chunk_size])
+            else:
+                current_chunk = f"{current_chunk}\n{para}".strip() if current_chunk else para
+
+        if current_chunk:
+            chunks.append(f"{metadata_prefix}\n{current_chunk}".strip() if metadata_prefix else current_chunk)
         return chunks
 
 class RAGCreator:

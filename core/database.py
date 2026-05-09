@@ -47,6 +47,20 @@ class Database:
                 )
             """)
             
+            # Table for Documents (Ingestion Tracking)
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS documents (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    filename TEXT,
+                    book_title TEXT,
+                    category TEXT,
+                    status TEXT DEFAULT 'pending',
+                    total_chunks INTEGER DEFAULT 0,
+                    error_message TEXT,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            """)
+            
             # Default Settings
             defaults = {
                 "agentic_provider": "groq",
@@ -88,6 +102,47 @@ class Database:
             cursor = conn.execute("SELECT * FROM messages WHERE chat_id = ? ORDER BY created_at ASC", (chat_id,))
             return [dict(row) for row in cursor.fetchall()]
 
+    # ── Document Management ────────────────────────────────────
+    def add_document(self, filename, book_title=None, category=None):
+        with self.get_connection() as conn:
+            cursor = conn.execute(
+                "INSERT INTO documents (filename, book_title, category) VALUES (?, ?, ?)",
+                (filename, book_title, category)
+            )
+            conn.commit()
+            return cursor.lastrowid
+
+    def get_document(self, doc_id):
+        with self.get_connection() as conn:
+            cursor = conn.execute("SELECT * FROM documents WHERE id = ?", (doc_id,))
+            row = cursor.fetchone()
+            return dict(row) if row else None
+
+    def get_all_documents(self):
+        with self.get_connection() as conn:
+            cursor = conn.execute("SELECT * FROM documents ORDER BY created_at DESC")
+            return [dict(row) for row in cursor.fetchall()]
+
+    def update_status(self, doc_id, status, error_message=None, total_chunks=None):
+        with self.get_connection() as conn:
+            if total_chunks is not None:
+                conn.execute(
+                    "UPDATE documents SET status = ?, error_message = ?, total_chunks = ? WHERE id = ?",
+                    (status, error_message, total_chunks, doc_id)
+                )
+            else:
+                conn.execute(
+                    "UPDATE documents SET status = ?, error_message = ? WHERE id = ?",
+                    (status, error_message, doc_id)
+                )
+            conn.commit()
+
+    def delete_document(self, doc_id):
+        with self.get_connection() as conn:
+            conn.execute("DELETE FROM documents WHERE id = ?", (doc_id,))
+            conn.commit()
+
+    # ── Settings ───────────────────────────────────────────────
     def set_setting(self, key, value):
         with self.get_connection() as conn:
             conn.execute("INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)", (key, value))
