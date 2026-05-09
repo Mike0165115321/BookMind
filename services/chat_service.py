@@ -35,9 +35,13 @@ class ChatService:
         search_query = query
         hyde_time = 0
         if use_hyde and config.ENABLE_HYDE:
-            yield {"type": "status", "stage": "hyde", "message": "🪄 กำลังสร้าง HyDE..."}
+            from core.database import db
+            h_p = db.get_setting("hyde_provider", provider)
+            h_m = db.get_setting("hyde_model", model_name)
+            
+            yield {"type": "status", "stage": "hyde", "message": f"🪄 กำลังสร้าง HyDE ({h_p})..."}
             t_hyde = time.time()
-            search_query = await asyncio.to_thread(hyde_transform, query, provider=p_name, model_name=model_name)
+            search_query = await asyncio.to_thread(hyde_transform, query, provider=ProviderName(h_p), model_name=h_m)
             hyde_time = time.time() - t_hyde
             yield {"type": "hyde", "hyde_query": search_query[:200], "time": round(hyde_time, 2)}
 
@@ -83,12 +87,19 @@ class ChatService:
         from core.llm.shared.types import ProviderName
         p_name = ProviderName(provider)
         
+        # Fetch HyDE settings from DB
+        from core.database import db
+        h_p = db.get_setting("hyde_provider", provider)
+        h_m = db.get_setting("hyde_model", model_name)
+
         # Re-initialize engine with current selection if needed or just pass parameters
         self.agentic_engine = AgenticEngine(
             searcher=self.searcher, 
             use_hyde=use_hyde,
             provider=p_name,
-            model_name=model_name
+            model_name=model_name,
+            hyde_provider=h_p,
+            hyde_model=h_m
         )
         
         # We start with an initial status

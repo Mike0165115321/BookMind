@@ -14,6 +14,12 @@
     --font: 'Inter', system-ui, -apple-system, sans-serif;
     --font-mono: 'JetBrains Mono', monospace;
     --transition: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+
+    /* Color Palette */
+    --blue-primary: #3e72ff;
+    --blue-light: #82aaff;
+    --slate-dark: #1e2235;
+    --orange: #ff9e64;
 }
 
 *, *::before, *::after {
@@ -58,4 +64,65 @@ button {
 ::-webkit-scrollbar-thumb {
     background: rgba(255, 255, 255, 0.1);
     border-radius: 10px;
+}
+
+/* Markdown Styling */
+.message-content h1, .message-content h2, .message-content h3 {
+    margin-top: 1.5rem;
+    margin-bottom: 0.75rem;
+    color: var(--blue-light);
+}
+
+.message-content p {
+    margin-bottom: 1rem;
+    line-height: 1.7;
+}
+
+.message-content ul, .message-content ol {
+    margin-bottom: 1rem;
+    padding-left: 1.5rem;
+}
+
+.message-content li {
+    margin-bottom: 0.5rem;
+}
+
+/* Table Styling */
+.message-content table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1.5rem 0;
+    font-size: 0.95rem;
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.message-content th {
+    background: rgba(62, 114, 255, 0.2);
+    color: var(--blue-light);
+    text-align: left;
+    padding: 12px 15px;
+    border-bottom: 2px solid rgba(62, 114, 255, 0.3);
+}
+
+.message-content td {
+    padding: 10px 15px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.message-content tr:last-child td {
+    border-bottom: none;
+}
+
+.message-content tr:hover {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.message-content blockquote {
+    border-left: 4px solid var(--blue-primary);
+    padding-left: 1rem;
+    color: var(--text-dim);
+    font-style: italic;
+    margin: 1rem 0;
 }

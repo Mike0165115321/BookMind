@@ -75,7 +75,11 @@ export const Chat = {
         if (data.provider) {
             parts.push(`<span class="metadata-badge">${UI.getProviderEmoji(data.provider)} ${data.provider.toUpperCase()}</span>`);
         }
-        parts.push(`<span>⏱️ ${data.total_time}s</span>`);
+        
+        // Use a safer check for total_time
+        const time = data.total_time || data.total_duration || 0;
+        parts.push(`<span>⏱️ ${parseFloat(time).toFixed(1)}s</span>`);
+        
         timingEl.innerHTML = parts.join('');
         messageEl.appendChild(timingEl);
         UI.scrollToBottom();

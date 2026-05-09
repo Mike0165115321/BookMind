@@ -97,8 +97,21 @@ class OpenRouterClient(BaseLLMClient):
             conn.request("POST", f"{self.path_prefix}/chat/completions", json.dumps(payload), self._get_headers())
             res = conn.getresponse()
             
+            if res.status != 200:
+                error_data = res.read().decode()
+                try:
+                    error_json = json.loads(error_data)
+                    error_msg = error_json.get("error", {}).get("message", error_data)
+                except:
+                    error_msg = error_data
+                yield LLMStreamChunk(text=f"\n⚠️ OpenRouter API Error ({res.status}): {error_msg}")
+                return
+
             for line in res:
                 line = line.decode().strip()
+                if not line:
+                    continue
+                    
                 if line.startswith("data: "):
                     if line == "data: [DONE]":
                         break
@@ -110,7 +123,7 @@ class OpenRouterClient(BaseLLMClient):
                     except:
                         continue
         except Exception as e:
-            yield LLMStreamChunk(text=f"\n❌ OpenRouter Error: {str(e)}", is_last=True)
+            yield LLMStreamChunk(text=f"\n❌ OpenRouter Connection Error: {str(e)}")
 
     def list_models(self) -> List[str]:
         """Fetch only FREE models from OpenRouter."""

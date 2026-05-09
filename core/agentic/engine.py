@@ -35,7 +35,9 @@ class AgenticEngine:
         max_chunks: Optional[int] = None,
         use_hyde: bool = True,
         provider: str = "gemini",
-        model_name: Optional[str] = None
+        model_name: Optional[str] = None,
+        hyde_provider: Optional[str] = None,
+        hyde_model: Optional[str] = None
     ):
         self.searcher = searcher
         self.max_iterations = max_iterations or config.AGENTIC_MAX_ITERATIONS
@@ -44,6 +46,8 @@ class AgenticEngine:
         self.use_hyde = use_hyde and config.ENABLE_HYDE
         self.provider = provider
         self.model_name = model_name
+        self.hyde_provider = hyde_provider
+        self.hyde_model = hyde_model
 
     def execute(self, query: str) -> Generator[InternalEngineEvent, None, None]:
         """
@@ -85,9 +89,11 @@ class AgenticEngine:
 
                 search_query = sq
                 if self.use_hyde:
-                    # Convert string provider to ProviderName enum
-                    p_enum = ProviderName(self.provider) if isinstance(self.provider, str) else self.provider
-                    search_query = hyde_transform(sq, provider=p_enum, model_name=self.model_name)
+                    # Use specific hyde settings if provided, else fallback to generation
+                    hp = self.hyde_provider or self.provider
+                    hm = self.hyde_model or self.model_name
+                    p_enum = ProviderName(hp) if isinstance(hp, str) else hp
+                    search_query = hyde_transform(sq, provider=p_enum, model_name=hm)
 
                 results = self.searcher.search(search_query, top_k=config.TOP_K_RETRIEVAL)
                 new_count = memory.add_search_results(sq, results, iteration)

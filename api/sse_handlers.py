@@ -154,11 +154,12 @@ async def agentic_event_generator(query: str, use_hyde: bool, provider: str = "g
             }
 
         elif event.event_type == "token":
-            token = event.data["text"]
-            full_ai_response += token
+            chunk = event.data["text"]
+            text = chunk.text if hasattr(chunk, 'text') else str(chunk)
+            full_ai_response += text
             yield {
                 "event": "token",
-                "data": json.dumps({"text": token}),
+                "data": json.dumps({"text": text}),
             }
 
         elif event.event_type == "done":

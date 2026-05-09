@@ -64,7 +64,16 @@ async function loadModels() {
             API.fetchModels(),
             API.fetchSettings()
         ]);
+        
+        // 1. Render options filtered by provider if any
         renderModelOptions(models, settings.gen_provider);
+        
+        // 2. FORCE SELECT the saved model from settings
+        if (settings.gen_provider && settings.gen_model) {
+            const savedValue = `${settings.gen_provider}:${settings.gen_model}`;
+            UI.elements.modelSelector.value = savedValue;
+            console.log("📍 Default model set to:", savedValue);
+        }
     } catch (err) {
         console.error("Failed to load models:", err);
     }
