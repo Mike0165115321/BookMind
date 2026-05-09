@@ -5,9 +5,9 @@ import json
 from services.chat_service import chat_service
 import config
 
-async def classic_event_generator(query: str, use_hyde: bool):
+async def classic_event_generator(query: str, use_hyde: bool, provider: str = "gemini", model: str = None):
     """Wraps ChatService classic pipeline with SSE formatting."""
-    async for event in chat_service.run_classic_pipeline(query, use_hyde):
+    async for event in chat_service.run_classic_pipeline(query, use_hyde, provider, model):
         e_type = event.get("type")
         
         if e_type == "status":
@@ -35,9 +35,9 @@ async def classic_event_generator(query: str, use_hyde: bool):
         elif e_type == "done":
             yield {"event": "done", "data": json.dumps(event)}
 
-async def agentic_event_generator(query: str, use_hyde: bool):
+async def agentic_event_generator(query: str, use_hyde: bool, provider: str = "gemini", model: str = None):
     """Wraps ChatService agentic pipeline with SSE formatting."""
-    async for event_wrapper in chat_service.run_agentic_pipeline(query, use_hyde):
+    async for event_wrapper in chat_service.run_agentic_pipeline(query, use_hyde, provider, model):
         if event_wrapper["type"] == "status":
             yield {"event": "status", "data": json.dumps({"stage": event_wrapper["stage"], "message": event_wrapper["message"]})}
             continue

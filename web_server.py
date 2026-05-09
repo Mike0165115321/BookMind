@@ -39,7 +39,7 @@ async def serve_admin():
     return FileResponse("web/admin.html")
 
 # Mount static directory for JS/CSS
-app.mount("/static", StaticFiles(directory="web"), name="static")
+app.mount("/static", StaticFiles(directory="web/static"), name="static")
 
 # Ensure upload directory exists at startup
 @app.on_event("startup")

@@ -120,8 +120,15 @@ class GeminiClient(BaseLLMClient):
         """List available Google Gemini models."""
         try:
             client = self._get_client()
-            models = client.models.list()
-            return [m.name for m in models if "generateContent" in m.supported_generation_methods]
+            models = []
+            for m in client.models.list():
+                # Google GenAI SDK (new) uses 'supported_actions' usually
+                # or we can just filter by name to get gemini models
+                if "gemini" in m.name.lower():
+                    # Extract the model ID (e.g., 'models/gemini-1.5-flash' -> 'gemini-1.5-flash')
+                    name = m.name.split("/")[-1]
+                    models.append(name)
+            return models
         except Exception as e:
             print(f"⚠️ Could not list Gemini models: {e}")
             return []

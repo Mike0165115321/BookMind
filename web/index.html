@@ -1,93 +1,91 @@
 <!DOCTYPE html>
 <html lang="th">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>📚 RAG Knowledge Base</title>
+    <title>BookMind | Premium RAG Experience</title>
+    
+    <!-- Fonts & Icons -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/static/style.css">
-</head>
+    
+    <!-- CSS Modules -->
+    <link rel="stylesheet" href="/static/css/base.css">
+    <link rel="stylesheet" href="/static/css/layout.css">
+    <link rel="stylesheet" href="/static/css/chat.css">
 
+    <!-- Libraries -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+</head>
 <body>
-    <!-- Header -->
     <header class="header">
         <div class="header-brand">
-            <span class="header-icon">📚</span>
-            <h1>RAG Knowledge Base</h1>
+            <i class="fas fa-book-open header-icon"></i>
+            <h1>BookMind RAG</h1>
         </div>
+        
         <div class="header-badges">
-            <span class="badge badge-gemini" title="Gemini 2.5 Flash">🤖 Gemini 2.5 Flash</span>
-            <span class="badge badge-llama" title="Llama 3.3 70B">🧠 Llama 3.3 70B</span>
-            <span class="badge badge-search" title="Hybrid Search: Dense + BM25">⚡ Hybrid</span>
-            <span class="badge badge-db" title="Vector DB: FAISS + BGE-M3">📂 FAISS+BGE</span>
-            <a href="/admin" class="btn-manage">
-                <i class="fas fa-cog"></i> จัดการคลังความรู้
+            <div class="model-selector-wrapper">
+                <i class="fas fa-robot selector-icon"></i>
+                <select id="modelSelector" class="model-selector">
+                    <option value="">⏳ กำลังโหลดโมเดล...</option>
+                </select>
+            </div>
+            <a href="/admin" class="badge-db" style="text-decoration: none; padding: 8px 16px; border-radius: 20px;">
+                <i class="fas fa-cog"></i> คลังความรู้
             </a>
         </div>
     </header>
 
-    <!-- Main Layout -->
     <main class="main-layout">
-        <!-- Chat Area -->
-        <div class="chat-container">
-            <div class="chat-messages" id="chatMessages">
-                <!-- Welcome message -->
-                <div class="welcome-card">
-                    <div class="welcome-icon">📖</div>
-                    <h2>ยินดีต้อนรับสู่ RAG Knowledge Base</h2>
-                    <p>ถามอะไรก็ได้เกี่ยวกับหนังสือในคลัง — ระบบจะค้นหา วิเคราะห์ และตอบจากเนื้อหาจริง</p>
-                    <div class="welcome-chips">
-                        <button class="chip" onclick="askSuggestion(this)">การสร้างนิสัยที่ดีต้องเริ่มยังไง</button>
-                        <button class="chip" onclick="askSuggestion(this)">กฎแห่งอำนาจที่ใช้รับมือคู่แข่ง</button>
-                        <button class="chip" onclick="askSuggestion(this)">หลักการรบที่ชนะโดยไม่ต้องรบคืออะไร</button>
-                        <button class="chip" onclick="askSuggestion(this)">วิธีอ่านใจคนและหน้ากากทางสังคม</button>
-                    </div>
+        <section class="chat-container">
+            <div id="chatMessages" class="chat-messages">
+                <!-- Welcome Card -->
+                <div class="welcome-card" style="margin-top: 10vh; text-align: center;">
+                    <div style="font-size: 64px; margin-bottom: 20px;">📘</div>
+                    <h2 style="font-size: 32px; font-weight: 700; margin-bottom: 12px;">ยินดีต้อนรับสู่ BookMind</h2>
+                    <p style="color: var(--text-secondary); max-width: 500px; margin: 0 auto 32px;">ถามอะไรก็ได้เกี่ยวกับหนังสือในคลัง ระบบจะวิเคราะห์และตอบจากเนื้อหาจริง</p>
                 </div>
             </div>
 
-            <!-- Input Area -->
             <div class="input-area">
                 <div class="input-wrapper">
                     <div class="input-controls">
-                        <label class="hyde-toggle" title="HyDE Query Transform">
+                        <label class="hyde-toggle">
                             <input type="checkbox" id="hydeToggle" checked>
-                            <span class="toggle-slider"></span>
-                            <span class="toggle-label">HyDE</span>
+                            <div class="toggle-slider"></div>
+                            <span class="toggle-label">🪄 HyDE</span>
                         </label>
-                        <label class="hyde-toggle" title="Agentic RAG — Multi-hop Search">
+                        <label class="hyde-toggle">
                             <input type="checkbox" id="agenticToggle">
-                            <span class="toggle-slider"></span>
+                            <div class="toggle-slider"></div>
                             <span class="toggle-label">🧠 Agentic</span>
                         </label>
                     </div>
                     <div class="input-row">
-                        <textarea id="queryInput" placeholder="ถามคำถามเกี่ยวกับหนังสือ..." rows="1" autofocus></textarea>
-                        <button id="sendBtn" onclick="sendMessage()" title="ส่งคำถาม">
+                        <textarea id="queryInput" placeholder="ถามเกี่ยวกับหนังสือ..." rows="1"></textarea>
+                        <button id="sendBtn">
                             <i class="fas fa-paper-plane"></i>
                         </button>
                     </div>
                 </div>
             </div>
-        </div>
+        </section>
 
-        <!-- Sources Panel -->
-        <aside class="sources-panel" id="sourcesPanel">
+        <aside class="sources-panel">
             <div class="sources-header">
-                <h3>📑 แหล่งอ้างอิง</h3>
+                <i class="fas fa-quote-left" style="color: var(--accent);"></i>
+                <h3>แหล่งอ้างอิง</h3>
             </div>
-            <div class="sources-list" id="sourcesList">
-                <div class="sources-empty">
-                    <span>🔍</span>
-                    <p>แหล่งอ้างอิงจะแสดงที่นี่เมื่อค้นหา</p>
+            <div id="sourcesList" class="sources-list">
+                <div style="color: var(--text-muted); text-align: center; margin-top: 40px; font-size: 13px;">
+                    แหล่งอ้างอิงจะแสดงที่นี่เมื่อคุณถาม
                 </div>
             </div>
         </aside>
     </main>
 
-    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    <script src="/static/app.js"></script>
+    <!-- JS Modules -->
+    <script type="module" src="/static/js/main.js"></script>
 </body>
-
 </html>

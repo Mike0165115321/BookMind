@@ -22,11 +22,13 @@ class ChatService:
     def get_searcher(self):
         return self.searcher
 
-    async def run_classic_pipeline(self, query: str, use_hyde: bool = True):
+    async def run_classic_pipeline(self, query: str, use_hyde: bool = True, provider: str = "gemini", model_name: str = None):
         """
         Executes the classic RAG pipeline.
         Yields status updates and final results (non-SSE).
         """
+        from core.llm.shared.types import ProviderName
+        p_name = ProviderName(provider)
         t_total = time.time()
         
         # 1. HyDE
@@ -35,7 +37,7 @@ class ChatService:
         if use_hyde and config.ENABLE_HYDE:
             yield {"type": "status", "stage": "hyde", "message": "🪄 กำลังสร้าง HyDE..."}
             t_hyde = time.time()
-            search_query = await asyncio.to_thread(hyde_transform, query)
+            search_query = await asyncio.to_thread(hyde_transform, query, provider=p_name, model_name=model_name)
             hyde_time = time.time() - t_hyde
             yield {"type": "hyde", "hyde_query": search_query[:200], "time": round(hyde_time, 2)}
 
@@ -48,11 +50,16 @@ class ChatService:
         yield {"type": "sources", "results": results, "search_time": search_time}
 
         # 3. Generate (Streaming)
-        yield {"type": "status", "stage": "generate", "message": f"🤖 กำลังสร้างคำตอบ ({config.GEMINI_MODEL})..."}
+        yield {"type": "status", "stage": "generate", "message": f"🤖 กำลังสร้างคำตอบ..."}
         t_gen = time.time()
         
-        for chunk in generate(query, results[:config.TOP_K_DISPLAY], stream=True):
-            yield {"type": "token", "text": chunk}
+        # Capture response metadata from the generator loop if possible, 
+        # but for streaming, the metadata usually comes at the end or we track it here.
+        # Note: generator.generate returns a generator for streaming
+        for chunk in generate(query, results[:config.TOP_K_DISPLAY], stream=True, provider=p_name, model_name=model_name):
+            # Check if chunk is LLMStreamChunk
+            text = chunk.text if hasattr(chunk, 'text') else str(chunk)
+            yield {"type": "token", "text": text}
             await asyncio.sleep(0)
 
         gen_time = time.time() - t_gen
@@ -61,19 +68,28 @@ class ChatService:
         yield {
             "type": "done",
             "mode": "classic",
+            "provider": provider,
+            "model": model_name,
             "hyde_time": round(hyde_time, 2),
             "search_time": round(search_time, 3),
             "gen_time": round(gen_time, 2),
             "total_time": round(total_time, 2),
         }
 
-    async def run_agentic_pipeline(self, query: str, use_hyde: bool = True):
+    async def run_agentic_pipeline(self, query: str, use_hyde: bool = True, provider: str = "gemini", model_name: str = None):
         """
         Executes the agentic RAG pipeline.
-        Yields status updates and events from AgenticEngine via AgenticFormatter.
         """
-        if not self.agentic_engine:
-            self.agentic_engine = AgenticEngine(searcher=self.searcher, use_hyde=use_hyde)
+        from core.llm.shared.types import ProviderName
+        p_name = ProviderName(provider)
+        
+        # Re-initialize engine with current selection if needed or just pass parameters
+        self.agentic_engine = AgenticEngine(
+            searcher=self.searcher, 
+            use_hyde=use_hyde,
+            provider=p_name,
+            model_name=model_name
+        )
         
         # We start with an initial status
         yield {"type": "status", "stage": "decompose", "message": "🧠 กำลังวิเคราะห์คำถาม..."}

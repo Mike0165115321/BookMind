@@ -20,6 +20,7 @@ from core.agentic.types import (
     DecompositionResult, 
     EvaluationResult
 )
+from core.llm.shared.types import ProviderName
 
 class AgenticEngine:
     """
@@ -33,12 +34,16 @@ class AgenticEngine:
         sufficiency_threshold: Optional[float] = None,
         max_chunks: Optional[int] = None,
         use_hyde: bool = True,
+        provider: str = "gemini",
+        model_name: Optional[str] = None
     ):
         self.searcher = searcher
         self.max_iterations = max_iterations or config.AGENTIC_MAX_ITERATIONS
         self.sufficiency_threshold = sufficiency_threshold or config.AGENTIC_SUFFICIENCY_THRESHOLD
         self.max_chunks = max_chunks or config.AGENTIC_MAX_CHUNKS
         self.use_hyde = use_hyde and config.ENABLE_HYDE
+        self.provider = provider
+        self.model_name = model_name
 
     def execute(self, query: str) -> Generator[InternalEngineEvent, None, None]:
         """
@@ -80,7 +85,9 @@ class AgenticEngine:
 
                 search_query = sq
                 if self.use_hyde:
-                    search_query = hyde_transform(sq)
+                    # Convert string provider to ProviderName enum
+                    p_enum = ProviderName(self.provider) if isinstance(self.provider, str) else self.provider
+                    search_query = hyde_transform(sq, provider=p_enum, model_name=self.model_name)
 
                 results = self.searcher.search(search_query, top_k=config.TOP_K_RETRIEVAL)
                 new_count = memory.add_search_results(sq, results, iteration)
@@ -150,7 +157,8 @@ class AgenticEngine:
         )
 
         # Stream the tokens
-        for chunk in generate(query, display_chunks, stream=True):
+        p_enum = ProviderName(self.provider) if isinstance(self.provider, str) else self.provider
+        for chunk in generate(query, display_chunks, stream=True, provider=p_enum, model_name=self.model_name):
             yield InternalEngineEvent(
                 event_type="token",
                 data={"text": chunk}
