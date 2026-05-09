@@ -46,6 +46,15 @@ class Database:
                     value TEXT
                 )
             """)
+            
+            # Default Settings
+            defaults = {
+                "agentic_provider": "groq",
+                "agentic_model": "llama-3.3-70b-versatile"
+            }
+            for key, value in defaults.items():
+                conn.execute("INSERT OR IGNORE INTO settings (key, value) VALUES (?, ?)", (key, value))
+                
             conn.commit()
 
     def create_chat(self, chat_id, title="New Chat"):

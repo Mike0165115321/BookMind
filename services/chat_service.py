@@ -87,19 +87,30 @@ class ChatService:
         from core.llm.shared.types import ProviderName
         p_name = ProviderName(provider)
         
-        # Fetch HyDE settings from DB
+        # Fetch HyDE & Agentic settings from DB
         from core.database import db
         h_p = db.get_setting("hyde_provider", provider)
         h_m = db.get_setting("hyde_model", model_name)
+        
+        # Fetch Agentic brain settings (Decomposer/Evaluator) from DB
+        a_p = db.get_setting("agentic_provider")
+        a_m = db.get_setting("agentic_model")
+        
+        if not a_p or not a_m:
+            # Fallback to main selection if agentic brain is not specifically configured
+            a_p = a_p or provider
+            a_m = a_m or model_name
 
-        # Re-initialize engine with current selection if needed or just pass parameters
+        # Re-initialize engine with current selection
         self.agentic_engine = AgenticEngine(
             searcher=self.searcher, 
             use_hyde=use_hyde,
             provider=p_name,
             model_name=model_name,
             hyde_provider=h_p,
-            hyde_model=h_m
+            hyde_model=h_m,
+            agentic_provider=a_p,
+            agentic_model=a_m
         )
         
         # We start with an initial status

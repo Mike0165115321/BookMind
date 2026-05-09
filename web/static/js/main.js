@@ -14,48 +14,29 @@ document.addEventListener('DOMContentLoaded', async () => {
     loadHistory();
 
     // 2. Setup Event Listeners
-    UI.elements.sendBtn.addEventListener('click', handleSend);
-    UI.elements.queryInput.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter' && !e.shiftKey) {
-            e.preventDefault();
-            handleSend();
-        }
-    });
-
-    UI.elements.newChatBtn.addEventListener('click', () => {
-        currentChatId = null;
-        UI.clearChat();
-        loadHistory(); // Refresh to clear active state
-    });
-
-    UI.elements.settingsBtn.addEventListener('click', async () => {
-        const models = await API.fetchModels();
-        UI.renderSettingsOptions(models);
+    if (UI.elements.sendBtn) UI.elements.sendBtn.addEventListener('click', handleSend);
+    if (UI.elements.queryInput) {
+        UI.elements.queryInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                handleSend();
+            }
+        });
         
-        const settings = await API.fetchSettings();
-        if (settings.hyde_model) UI.elements.hydeModelSelect.value = settings.hyde_model;
-        if (settings.gen_model) UI.elements.genModelSelect.value = settings.gen_model;
-        
-        UI.showSettings();
-    });
+        // Auto-resize textarea
+        UI.elements.queryInput.addEventListener('input', () => {
+            UI.elements.queryInput.style.height = 'auto';
+            UI.elements.queryInput.style.height = Math.min(UI.elements.queryInput.scrollHeight, 150) + 'px';
+        });
+    }
 
-    UI.elements.saveSettings.addEventListener('click', async () => {
-        const settings = {
-            hyde_model: UI.elements.hydeModelSelect.value,
-            gen_model: UI.elements.genModelSelect.value
-        };
-        await API.saveSettings(settings);
-        UI.hideSettings();
-        alert("บันทึกการตั้งค่าเรียบร้อยแล้ว");
-        // Update inline selector to match gen_model
-        UI.elements.modelSelector.value = settings.gen_model;
-    });
-
-    // Auto-resize textarea
-    UI.elements.queryInput.addEventListener('input', () => {
-        UI.elements.queryInput.style.height = 'auto';
-        UI.elements.queryInput.style.height = Math.min(UI.elements.queryInput.scrollHeight, 150) + 'px';
-    });
+    if (UI.elements.newChatBtn) {
+        UI.elements.newChatBtn.addEventListener('click', () => {
+            currentChatId = null;
+            UI.clearChat();
+            loadHistory(); // Refresh to clear active state
+        });
+    }
 });
 
 async function loadModels() {

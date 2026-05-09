@@ -75,23 +75,76 @@
     padding: 0 16px;
 }
 
+.sidebar-brand {
+    border-bottom: 1px solid transparent;
+    transition: var(--transition);
+}
+
+.sidebar-brand:hover {
+    filter: brightness(1.2);
+}
+
+.history-list {
+    padding: 0 12px;
+}
+
 .history-item {
-    padding: 8px 16px;
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 14px;
+    margin-bottom: 4px;
     font-size: 14px;
     color: var(--text-main);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    border-radius: var(--radius-md);
+    border-radius: 12px;
     cursor: pointer;
+    transition: all 0.2s ease;
+    border: 1px solid transparent;
 }
 
 .history-item:hover {
-    background: var(--bg-hover);
+    background: rgba(255, 255, 255, 0.05);
+    border-color: rgba(255, 255, 255, 0.08);
 }
 
 .history-item.active {
     background: var(--bg-hover);
+    border-color: rgba(62, 114, 255, 0.3);
+    color: var(--blue-light);
+}
+
+.history-item i:first-child {
+    font-size: 14px;
+    opacity: 0.6;
+}
+
+.history-title {
+    flex: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-weight: 400;
+}
+
+.delete-chat-btn {
+    opacity: 0;
+    padding: 4px 8px;
+    color: var(--text-muted);
+    transition: all 0.2s ease;
+    border-radius: 6px;
+    font-size: 13px;
+    transform: translateX(5px);
+}
+
+.history-item:hover .delete-chat-btn {
+    opacity: 1;
+    transform: translateX(0);
+}
+
+.delete-chat-btn:hover {
+    background: rgba(255, 77, 77, 0.1);
+    color: #ff4d4d;
 }
 
 /* ── Main Content ── */

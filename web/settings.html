@@ -66,9 +66,6 @@
             gap: 20px;
             animation: fadeIn 0.3s ease;
         }
-        .section-content.hidden {
-            display: none;
-        }
         .form-row {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -127,6 +124,28 @@
             </div>
         </div>
 
+        <!-- ── Agentic Brain Section (New) ── -->
+        <div class="settings-section">
+            <div class="section-header">
+                <h2>🔬 Agentic Brain (Decomposer & Evaluator)</h2>
+            </div>
+            <div id="agenticContent" class="section-content">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>เลือกค่ายโมเดล</label>
+                        <select id="agenticProvider" class="form-select"></select>
+                    </div>
+                    <div class="form-group">
+                        <label>เลือกโมเดล</label>
+                        <select id="agenticModel" class="form-select"></select>
+                    </div>
+                </div>
+                <p style="font-size: 12px; color: var(--text-muted); margin-top: -10px;">
+                    * โมเดลส่วนนี้ใช้สำหรับการวิเคราะห์และประเมินความเพียงพอของข้อมูลในโหมด Agentic
+                </p>
+            </div>
+        </div>
+
         <!-- ── Generation Section ── -->
         <div class="settings-section">
             <div class="section-header">
@@ -167,8 +186,9 @@
                 allModels = models;
 
                 // Setup Sections
-                setupSection('hyde', settings.hyde_enable === 'true', settings.hyde_provider, settings.hyde_model);
-                setupSection('gen', settings.gen_enable === 'true', settings.gen_provider, settings.gen_model);
+                setupSection('hyde', settings.hyde_provider, settings.hyde_model);
+                setupSection('agentic', settings.agentic_provider || 'groq', settings.agentic_model);
+                setupSection('gen', settings.gen_provider, settings.gen_model);
 
             } catch (err) {
                 console.error("Init failed:", err);
@@ -189,10 +209,9 @@
             return name.charAt(0).toUpperCase() + name.slice(1).toLowerCase();
         }
 
-        function setupSection(prefix, isEnabled, currentProvider, currentModel) {
-            const content = document.getElementById(`${prefix}Content`);
+        function setupSection(prefix, currentProvider, currentModel) {
             const providerSel = document.getElementById(`${prefix}Provider`);
-            const modelSel = document.getElementById(`${prefix}Model`);
+            if (!providerSel) return;
 
             // Populate Providers
             providerSel.innerHTML = '<option value="">เลือกค่ายโมเดล...</option>';
@@ -217,6 +236,8 @@
 
         function updateModels(prefix, provider, selectedModel) {
             const modelSel = document.getElementById(`${prefix}Model`);
+            if (!modelSel) return;
+            
             modelSel.innerHTML = '<option value="">เลือกโมเดล...</option>';
             
             if (provider && allModels[provider]) {
@@ -232,10 +253,10 @@
 
         document.getElementById('saveBtn').addEventListener('click', async () => {
             const settings = {
-                hyde_enable: "true",
                 hyde_provider: document.getElementById('hydeProvider').value,
                 hyde_model: document.getElementById('hydeModel').value,
-                gen_enable: "true",
+                agentic_provider: document.getElementById('agenticProvider').value,
+                agentic_model: document.getElementById('agenticModel').value,
                 gen_provider: document.getElementById('genProvider').value,
                 gen_model: document.getElementById('genModel').value
             };
