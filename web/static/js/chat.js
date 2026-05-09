@@ -4,11 +4,17 @@
 import { UI } from './ui.js';
 
 export const Chat = {
-    async handleStream(reader, contentEl, statusEl, messageEl, isAgentic) {
+    async handleStream(reader, contentEl, thoughtEl, messageEl, isAgentic, onChatId) {
         const decoder = new TextDecoder();
         let fullText = '';
         let buffer = '';
         let currentEvent = null;
+
+        // Show thinking status initially
+        if (thoughtEl) {
+            thoughtEl.style.display = 'flex';
+            thoughtEl.querySelector('.thought-text').textContent = 'Thinking...';
+        }
 
         while (true) {
             const { done, value } = await reader.read();
@@ -23,9 +29,17 @@ export const Chat = {
                     currentEvent = line.slice(6).trim();
                 } else if (line.startsWith('data:') && currentEvent) {
                     const data = JSON.parse(line.slice(5).trim());
-                    this.processEvent(currentEvent, data, contentEl, statusEl, messageEl, isAgentic);
+                    this.processEvent(currentEvent, data, contentEl, thoughtEl, messageEl, isAgentic);
+
+                    if (currentEvent === 'chat_id' && onChatId) {
+                        onChatId(data.chat_id);
+                    }
 
                     if (currentEvent === 'token') {
+                        // Hide thinking status on first token
+                        if (thoughtEl && thoughtEl.style.display !== 'none') {
+                            thoughtEl.style.display = 'none';
+                        }
                         fullText += data.text;
                         contentEl.innerHTML = marked.parse(fullText);
                         UI.scrollToBottom();
@@ -36,18 +50,19 @@ export const Chat = {
         }
     },
 
-    processEvent(event, data, contentEl, statusEl, messageEl, isAgentic) {
-        // Handle various event types (status, sources, done, etc.)
-        // This is a simplified version, we can expand it for agentic steps
+    processEvent(event, data, contentEl, thoughtEl, messageEl, isAgentic) {
         switch (event) {
             case 'status':
-                statusEl.querySelector('.status-text').textContent = data.message;
+                if (thoughtEl) {
+                    thoughtEl.style.display = 'flex';
+                    thoughtEl.querySelector('.thought-text').textContent = data.message;
+                }
                 break;
             case 'sources':
                 UI.renderSources(data.sources);
                 break;
             case 'done':
-                statusEl.remove();
+                if (thoughtEl) thoughtEl.remove();
                 this.renderTiming(data, messageEl);
                 break;
         }

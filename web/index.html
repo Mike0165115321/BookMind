@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BookMind | Premium RAG Experience</title>
+    <title>BookMind | AI Intelligence</title>
     
     <!-- Fonts & Icons -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <!-- CSS Modules -->
@@ -17,73 +17,96 @@
     <!-- Libraries -->
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 </head>
-<body>
-    <header class="header">
-        <div class="header-brand">
-            <i class="fas fa-book-open header-icon"></i>
-            <h1>BookMind RAG</h1>
-        </div>
-        
-        <div class="header-badges">
-            <div class="model-selector-wrapper">
-                <i class="fas fa-robot selector-icon"></i>
-                <select id="modelSelector" class="model-selector">
-                    <option value="">⏳ กำลังโหลดโมเดล...</option>
-                </select>
+<body class="theme-dark">
+    <div class="app-wrapper">
+        <!-- ── Sidebar ── -->
+        <aside class="sidebar" id="sidebar">
+            <div class="history-section">
+                <div id="historyList" class="history-list">
+                    <!-- History items will be loaded from DB -->
+                </div>
             </div>
-            <a href="/admin" class="badge-db" style="text-decoration: none; padding: 8px 16px; border-radius: 20px;">
-                <i class="fas fa-cog"></i> คลังความรู้
-            </a>
-        </div>
-    </header>
+            <div class="sidebar-actions" style="margin-top: 48px;">
+                <button class="new-chat-btn" id="newChatBtn">
+                    <i class="far fa-edit"></i>
+                    <span>แชทใหม่</span>
+                </button>
+                <a href="/admin" class="nav-item">
+                    <i class="fas fa-rocket"></i>
+                    <span>เพิ่มข้อมูล</span>
+                </a>
+                <a href="/settings" class="nav-item">
+                    <i class="fas fa-cog"></i>
+                    <span>ตั้งค่า</span>
+                </a>
+            </div>
+        </aside>
 
-    <main class="main-layout">
-        <section class="chat-container">
-            <div id="chatMessages" class="chat-messages">
-                <!-- Welcome Card -->
-                <div class="welcome-card" style="margin-top: 10vh; text-align: center;">
-                    <div style="font-size: 64px; margin-bottom: 20px;">📘</div>
-                    <h2 style="font-size: 32px; font-weight: 700; margin-bottom: 12px;">ยินดีต้อนรับสู่ BookMind</h2>
-                    <p style="color: var(--text-secondary); max-width: 500px; margin: 0 auto 32px;">ถามอะไรก็ได้เกี่ยวกับหนังสือในคลัง ระบบจะวิเคราะห์และตอบจากเนื้อหาจริง</p>
+        <!-- ── Main Content ── -->
+        <main class="main-content">
+            <button class="icon-btn floating-toggle" id="sidebarToggle" title="Toggle Sidebar">
+                <i class="fas fa-columns"></i>
+            </button>
+
+            <button class="icon-btn floating-toggle-right" id="sourcesToggle" title="Toggle Sources">
+                <i class="fas fa-quote-right"></i>
+            </button>
+
+            <!-- Chat Area -->
+            <div id="chatMessages" class="chat-viewport">
+                <!-- Welcome State (Visible when no messages) -->
+                <div class="welcome-hero" id="welcomeHero">
+                    <h2 style="font-size: 32px; font-weight: 700; margin-bottom: 12px; color: var(--text-muted);">BookMind</h2>
+                    <p style="color: var(--text-muted); opacity: 0.6;">What can I help you with today?</p>
                 </div>
             </div>
 
-            <div class="input-area">
-                <div class="input-wrapper">
-                    <div class="input-controls">
-                        <label class="hyde-toggle">
-                            <input type="checkbox" id="hydeToggle" checked>
-                            <div class="toggle-slider"></div>
-                            <span class="toggle-label">🪄 HyDE</span>
-                        </label>
-                        <label class="hyde-toggle">
-                            <input type="checkbox" id="agenticToggle">
-                            <div class="toggle-slider"></div>
-                            <span class="toggle-label">🧠 Agentic</span>
-                        </label>
-                    </div>
-                    <div class="input-row">
-                        <textarea id="queryInput" placeholder="ถามเกี่ยวกับหนังสือ..." rows="1"></textarea>
-                        <button id="sendBtn">
-                            <i class="fas fa-paper-plane"></i>
+            <!-- Floating Input Area -->
+            <div class="input-container">
+                <div class="floating-input-wrapper">
+                    <button class="input-action-btn" title="Add files">
+                        <i class="fas fa-plus"></i>
+                    </button>
+                    <button class="input-action-btn" title="Web Search">
+                        <i class="fas fa-globe"></i>
+                    </button>
+                    
+                    <textarea id="queryInput" placeholder="Send a message" rows="1"></textarea>
+                    
+                    <div class="input-right-actions">
+                        <select id="modelSelector" class="inline-model-select">
+                            <!-- Models will be loaded here -->
+                        </select>
+                        <button id="sendBtn" class="send-btn">
+                            <i class="fas fa-arrow-up"></i>
                         </button>
                     </div>
                 </div>
-            </div>
-        </section>
-
-        <aside class="sources-panel">
-            <div class="sources-header">
-                <i class="fas fa-quote-left" style="color: var(--accent);"></i>
-                <h3>แหล่งอ้างอิง</h3>
-            </div>
-            <div id="sourcesList" class="sources-list">
-                <div style="color: var(--text-muted); text-align: center; margin-top: 40px; font-size: 13px;">
-                    แหล่งอ้างอิงจะแสดงที่นี่เมื่อคุณถาม
+                
+                <div class="input-footer">
+                    <label class="toggle-control">
+                        <input type="checkbox" id="hydeToggle" checked>
+                        <span>🪄 HyDE</span>
+                    </label>
+                    <label class="toggle-control">
+                        <input type="checkbox" id="agenticToggle">
+                        <span>🧠 Agentic</span>
+                    </label>
                 </div>
             </div>
+        </main>
+
+        <!-- ── Right Sidebar (Sources) ── -->
+        <aside class="sidebar-right collapsed" id="sourcesPanel">
+            <div class="sidebar-header" style="margin-top: 48px;">
+                <label style="font-size: 11px; font-weight: 600; color: var(--text-muted); text-transform: uppercase;">Sources</label>
+            </div>
+            <div id="sourcesList" class="sources-list">
+                <!-- Sources will be rendered here -->
+            </div>
         </aside>
-    </main>
+
+    </div>
 
     <!-- JS Modules -->
     <script type="module" src="/static/js/main.js"></script>

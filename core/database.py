@@ -1,87 +1,81 @@
 import sqlite3
 import os
+import json
 from datetime import datetime
 import config
 
-class DatabaseManager:
-    def __init__(self, db_path=None):
-        if db_path is None:
-            db_path = os.path.join(config.STORAGE_DIR, "metadata.db")
-        
-        # Ensure directory exists
-        os.makedirs(os.path.dirname(db_path), exist_ok=True)
-        self.db_path = db_path
-        self._init_db()
+DB_PATH = os.path.join(config.DATA_DIR, "bookmind.db")
 
-    def _get_connection(self):
-        return sqlite3.connect(self.db_path)
+class Database:
+    def __init__(self):
+        self.init_db()
 
-    def _init_db(self):
-        """Initialize the database tables if they don't exist."""
-        with self._get_connection() as conn:
-            cursor = conn.cursor()
-            
-            # Table for documents
-            cursor.execute('''
-                CREATE TABLE IF NOT EXISTS documents (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    filename TEXT NOT NULL,
-                    book_title TEXT,
-                    category TEXT,
-                    upload_date TEXT,
-                    status TEXT DEFAULT 'WAITING',
-                    total_chunks INTEGER DEFAULT 0,
-                    error_message TEXT
+    def get_connection(self):
+        conn = sqlite3.connect(DB_PATH)
+        conn.row_factory = sqlite3.Row
+        return conn
+
+    def init_db(self):
+        os.makedirs(config.DATA_DIR, exist_ok=True)
+        with self.get_connection() as conn:
+            # Table for Chat Sessions
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS chats (
+                    id TEXT PRIMARY KEY,
+                    title TEXT,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 )
-            ''')
+            """)
+            # Table for Settings
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS settings (
+                    key TEXT PRIMARY KEY,
+                    value TEXT
+                )
+            """)
             conn.commit()
 
-    def add_document(self, filename, book_title=None, category=None):
-        """Add a new document entry to the database."""
-        now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        with self._get_connection() as conn:
-            cursor = conn.cursor()
-            cursor.execute('''
-                INSERT INTO documents (filename, book_title, category, upload_date, status)
-                VALUES (?, ?, ?, ?, 'WAITING')
-            ''', (filename, book_title, category, now))
-            conn.commit()
-            return cursor.lastrowid
-
-    def update_status(self, doc_id, status, total_chunks=0, error_message=None):
-        """Update the ingestion status of a document."""
-        with self._get_connection() as conn:
-            cursor = conn.cursor()
-            cursor.execute('''
-                UPDATE documents 
-                SET status = ?, total_chunks = ?, error_message = ?
-                WHERE id = ?
-            ''', (status, total_chunks, error_message, doc_id))
+    def create_chat(self, chat_id, title="New Chat"):
+        with self.get_connection() as conn:
+            conn.execute("INSERT INTO chats (id, title) VALUES (?, ?)", (chat_id, title))
             conn.commit()
 
-    def get_all_documents(self):
-        """Get list of all documents and their status."""
-        with self._get_connection() as conn:
-            conn.row_factory = sqlite3.Row
-            cursor = conn.cursor()
-            cursor.execute('SELECT * FROM documents ORDER BY upload_date DESC')
+    def add_message(self, chat_id, role, content, metadata=None):
+        meta_json = json.dumps(metadata) if metadata else None
+        with self.get_connection() as conn:
+            conn.execute(
+                "INSERT INTO messages (chat_id, role, content, metadata) VALUES (?, ?, ?, ?)",
+                (chat_id, role, content, meta_json)
+            )
+            # Update chat's updated_at
+            conn.execute("UPDATE chats SET updated_at = CURRENT_TIMESTAMP WHERE id = ?", (chat_id,))
+            conn.commit()
+
+    def get_chats(self):
+        with self.get_connection() as conn:
+            cursor = conn.execute("SELECT * FROM chats ORDER BY updated_at DESC")
             return [dict(row) for row in cursor.fetchall()]
 
-    def get_document(self, doc_id):
-        """Get a single document entry by ID."""
-        with self._get_connection() as conn:
-            conn.row_factory = sqlite3.Row
-            cursor = conn.cursor()
-            cursor.execute('SELECT * FROM documents WHERE id = ?', (doc_id,))
-            row = cursor.fetchone()
-            return dict(row) if row else None
+    def get_messages(self, chat_id):
+        with self.get_connection() as conn:
+            cursor = conn.execute("SELECT * FROM messages WHERE chat_id = ? ORDER BY created_at ASC", (chat_id,))
+            return [dict(row) for row in cursor.fetchall()]
 
-    def delete_document(self, doc_id):
-        """Remove a document entry."""
-        with self._get_connection() as conn:
-            cursor = conn.cursor()
-            cursor.execute('DELETE FROM documents WHERE id = ?', (doc_id,))
+    def set_setting(self, key, value):
+        with self.get_connection() as conn:
+            conn.execute("INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)", (key, value))
             conn.commit()
 
-# Singleton instance
-db = DatabaseManager()
+    def get_setting(self, key, default=None):
+        with self.get_connection() as conn:
+            cursor = conn.execute("SELECT value FROM settings WHERE key = ?", (key,))
+            row = cursor.fetchone()
+            return row["value"] if row else default
+
+    def get_all_settings(self):
+        with self.get_connection() as conn:
+            cursor = conn.execute("SELECT * FROM settings")
+            return {row["key"]: row["value"] for row in cursor.fetchall()}
+
+db = Database()

@@ -1,12 +1,22 @@
-"""
-SSE Handlers — Format service output into Server-Sent Events (SSE).
-"""
+import uuid
 import json
-from services.chat_service import chat_service
 import config
+from core.database import db
+from services.chat_service import chat_service
 
-async def classic_event_generator(query: str, use_hyde: bool, provider: str = "gemini", model: str = None):
-    """Wraps ChatService classic pipeline with SSE formatting."""
+async def classic_event_generator(query: str, use_hyde: bool, provider: str = "gemini", model: str = None, chat_id: str = None):
+    """Wraps ChatService classic pipeline with SSE formatting and DB persistence."""
+    if not chat_id:
+        chat_id = str(uuid.uuid4())
+        db.create_chat(chat_id, title=query[:50]) # Use query as initial title
+    
+    # 1. Save User Message
+    db.add_message(chat_id, "user", query)
+    
+    # Send chat_id to frontend first
+    yield {"event": "chat_id", "data": json.dumps({"chat_id": chat_id})}
+
+    full_ai_response = ""
     async for event in chat_service.run_classic_pipeline(query, use_hyde, provider, model):
         e_type = event.get("type")
         
@@ -30,13 +40,25 @@ async def classic_event_generator(query: str, use_hyde: bool, provider: str = "g
             yield {"event": "sources", "data": json.dumps({"sources": sources, "search_time": round(event["search_time"], 3)}, ensure_ascii=False)}
             
         elif e_type == "token":
-            yield {"event": "token", "data": json.dumps({"text": event["text"]})}
+            token = event["text"]
+            full_ai_response += token
+            yield {"event": "token", "data": json.dumps({"text": token})}
             
         elif e_type == "done":
+            # 2. Save AI Response
+            db.add_message(chat_id, "ai", full_ai_response, metadata=event)
             yield {"event": "done", "data": json.dumps(event)}
 
-async def agentic_event_generator(query: str, use_hyde: bool, provider: str = "gemini", model: str = None):
-    """Wraps ChatService agentic pipeline with SSE formatting."""
+async def agentic_event_generator(query: str, use_hyde: bool, provider: str = "gemini", model: str = None, chat_id: str = None):
+    """Wraps ChatService agentic pipeline with SSE formatting and DB persistence."""
+    if not chat_id:
+        chat_id = str(uuid.uuid4())
+        db.create_chat(chat_id, title=query[:50])
+    
+    db.add_message(chat_id, "user", query)
+    yield {"event": "chat_id", "data": json.dumps({"chat_id": chat_id})}
+
+    full_ai_response = ""
     async for event_wrapper in chat_service.run_agentic_pipeline(query, use_hyde, provider, model):
         if event_wrapper["type"] == "status":
             yield {"event": "status", "data": json.dumps({"stage": event_wrapper["stage"], "message": event_wrapper["message"]})}
@@ -132,13 +154,16 @@ async def agentic_event_generator(query: str, use_hyde: bool, provider: str = "g
             }
 
         elif event.event_type == "token":
+            token = event.data["text"]
+            full_ai_response += token
             yield {
                 "event": "token",
-                "data": json.dumps({"text": event.data["text"]}),
+                "data": json.dumps({"text": token}),
             }
 
         elif event.event_type == "done":
             d = event.data
+            db.add_message(chat_id, "ai", full_ai_response, metadata=d)
             yield {
                 "event": "done",
                 "data": json.dumps({

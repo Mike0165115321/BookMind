@@ -31,11 +31,15 @@ app.include_router(admin.router)
 # Static Files & Frontend
 # ──────────────────────────────────────────────
 @app.get("/")
-async def serve_index():
+async def get_index():
     return FileResponse("web/index.html")
 
+@app.get("/settings")
+async def get_settings_page():
+    return FileResponse("web/settings.html")
+
 @app.get("/admin")
-async def serve_admin():
+async def get_admin_page():
     return FileResponse("web/admin.html")
 
 # Mount static directory for JS/CSS
