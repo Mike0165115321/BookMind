@@ -1,10 +1,14 @@
 import discord
 import httpx
 import asyncio
-
+import os
+from dotenv import load_dotenv
 from collections import defaultdict
 
-TOKEN = 'MTQ5OTI5OTcyODExNjk0NTA0Ng.GHUshM.OCM5WopBeGZeLTc-9lA3adwfGSbxstPmuDL7N0'
+# Load environment variables
+load_dotenv()
+
+TOKEN = os.getenv('DISCORD_TOKEN')
 
 # Session Memory: {user_id: [messages]}
 memory = defaultdict(list)
