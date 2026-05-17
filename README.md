@@ -4,8 +4,8 @@
 
 **Developed by [Aetox.dev](https://aetox.dev)**
 
-> **สถานะ:** ✅ System Stable & Optimized (v3.5)  
-> **Version:** 3.5 — Gemini-style Sidebar + Ingestion Expansion (JSONL/Excel) + Token Efficiency + Performance Monitor
+> **สถานะ:** ✅ System Stable & Optimized (v3.6)  
+> **Version:** 3.6 — Persona Management + Interactive Pill Toggles + Conditional Logic + Performance Monitor
 
 📘 **[เอกสารเทคนิคฉบับเต็ม (Technical Guide)](docs/technical_guide.md)**
 
@@ -288,6 +288,8 @@ GROQ_TEMPERATURE=0.7
 - [x] 🧠 Agentic RAG — Query Decomposition + Multi-hop Retrieval
 - [x] 📊 Sufficiency Evaluator — ประเมินข้อมูลครบหรือยัง
 - [x] ⚖️ Balanced Chunk Selection — round-robin จากทุก source
+- [x] 🎭 Persona Management — ระบบสลับบทบาท (ครู, นักกฎหมาย, นักบัญชี ฯลฯ)
+- [x] 🎛️ Interactive Pill Toggles — สวิตช์เปิด/ปิด HyDE และ Agentic แบบใหม่ พร้อมเงื่อนไขการทำงานร่วมกัน
 - [ ] Conversation Memory (multi-turn)
 - [ ] Document Upload (PDF/TXT via Web UI)
 - [ ] Multi-Agent System (specialized agents per domain)

@@ -28,6 +28,7 @@
 17. [ข้อมูลโมเดล AI](#17-ข้อมูลโมเดล-ai)
 18. [Flow Chart — ภาพรวมทุกขั้นตอน](#18-flow-chart--ภาพรวมทุกขั้นตอน)
 19. [🧠 Agentic RAG — Multi-hop Retrieval](#19-agentic-rag--multi-hop-retrieval)
+20. [🎭 Persona Management System](#20-persona-management-system)
 
 ---
 
@@ -1435,6 +1436,18 @@ sequenceDiagram
 
 ---
 
-> 📅 **Last Updated:** April 2026 (Modular Refactoring)
+## 20. 🎭 Persona Management System
+
+ระบบที่ช่วยให้ผู้ใช้สามารถสลับ "บทบาท" หรือ "บุคลิก" ของ AI ได้ตามต้องการ เพื่อให้ได้คำตอบที่ตรงกับสายงานหรือมุมมองที่ต้องการ
+
+### คุณสมบัติหลัก
+- **Data-Driven:** โหลดบทบาททั้งหมดจากไฟล์ `personas.json` ทำให้เพิ่ม/แก้ไขบทบาทได้ง่ายโดยไม่ต้องแก้โค้ด
+- **Tone & Style Control:** กำหนดหางเสียง (เช่น "ครับ"), ระดับความเป็นทางการ, และสไตล์การอธิบายได้
+- **Model Config Override:** แต่ละบทบาทสามารถกำหนด `temperature` และโมเดลที่ต้องการใช้แยกกันได้ เพื่อผลลัพธ์ที่เหมาะสมที่สุด
+- **Global Rules:** บังคับใช้กฎกลาง (เช่น การลงท้ายด้วย "ครับ" เสมอ) เพื่อความสุภาพและเป็นมาตรฐานเดียวกัน
+
+---
+
+> 📅 **Last Updated:** May 2026
 > 📝 **Author:** Antigravity AI
-> 🔖 **Version:** 4.0 — **Modular & Service-Oriented RAG** (Clean Architecture, Provider Interface, Prompt Registry, Modular Retrieval Pipeline, Agentic Engine)
+> 🔖 **Version:** 4.1 — **Persona Management & Interactive UI**
