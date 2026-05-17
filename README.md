@@ -165,11 +165,20 @@ chmod +x fix_ollama_network.sh
 
 ## 🚀 Quick Start
 
+### 0. เตรียมข้อมูล (Data Preparation)
+- นำไฟล์ข้อมูลที่คุณต้องการใช้ค้นหา (รองรับ `.jsonl`, `.pdf`, `.docx`, `.xlsx`, `.pptx`, `.md`, `.html`, `.csv`, `.svg`, `.txt`) ไปใส่ไว้ในโฟลเดอร์ `data/` (สร้างโฟลเดอร์ขึ้นมาหากไม่มี)
+- หากยังไม่มี สามารถสร้างไฟล์ `.jsonl` ตัวอย่างที่มีโครงสร้างแบบนี้:
+  ```json
+  {"book_title": "หนังสือตัวอย่าง", "title": "บทที่ 1", "content": "เนื้อหาที่ต้องการให้อ่าน..."}
+  ```
+
 ### 1. Build Index
 ```bash
 python3 build_index.py            # สร้าง index ครั้งแรก
 python3 build_index.py --force    # สร้างใหม่ (ลบของเก่า)
 ```
+> [!NOTE]
+> การรันครั้งแรกจะมีการดาวน์โหลดโมเดล Embedding และ Reranker ขนาดรวมประมาณ 4.5 GB จาก Hugging Face โดยอัตโนมัติ กรุณาตรวจสอบการเชื่อมต่ออินเทอร์เน็ต
 
 ### 2. CLI — Classic Pipeline
 ```bash
