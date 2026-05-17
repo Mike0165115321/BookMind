@@ -40,7 +40,18 @@ export const Chat = {
                                 thoughtEl.style.display = 'none';
                             }
                             fullText += data.text;
-                            contentEl.innerHTML = marked.parse(fullText);
+                            
+                            // Client-side citation parsing [x] -> badge
+                            // We use a regex that matches [1], [2], etc., and validate against totalSources
+                            let parsedText = fullText.replace(/\[(\d+)\]/g, (match, id) => {
+                                const sourceId = parseInt(id, 10);
+                                if (sourceId > 0 && sourceId <= (Chat.totalSources || 10)) {
+                                    return `<span class="citation-badge" data-id="${sourceId}">[${sourceId}]</span>`;
+                                }
+                                return match; // Fallback if invalid
+                            });
+                            
+                            contentEl.innerHTML = marked.parse(parsedText);
                             UI.scrollToBottom();
                         }
                     } catch (e) {
@@ -54,6 +65,14 @@ export const Chat = {
 
     processEvent(event, data, contentEl, thoughtEl, messageEl, isAgentic) {
         switch (event) {
+            case 'session_init':
+                if (data.persona && data.persona.color) {
+                    // Visual feedback for persona switch (e.g. change accent color locally or show toast)
+                    console.log(`Persona loaded: ${data.persona.label}`);
+                    // Optionally, we could set a CSS variable for the theme
+                    // document.body.style.setProperty('--accent', data.persona.color);
+                }
+                break;
             case 'status':
                 if (thoughtEl) {
                     thoughtEl.style.display = 'flex';
@@ -61,6 +80,7 @@ export const Chat = {
                 }
                 break;
             case 'sources':
+                Chat.totalSources = data.sources ? data.sources.length : 0;
                 UI.renderSources(data.sources);
                 break;
             case 'done':

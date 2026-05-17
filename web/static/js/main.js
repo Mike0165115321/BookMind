@@ -10,7 +10,6 @@ let currentChatId = null;
 document.addEventListener('DOMContentLoaded', async () => {
     // 1. Initial Load
     UI.init();
-    loadModels();
     loadHistory();
 
     // 2. Setup Event Listeners
@@ -37,28 +36,56 @@ document.addEventListener('DOMContentLoaded', async () => {
             loadHistory(); // Refresh to clear active state
         });
     }
+
+    // Citation Click Handler
+    document.addEventListener('click', (e) => {
+        const badge = e.target.closest('.citation-badge');
+        if (badge) {
+            const id = badge.getAttribute('data-id');
+            scrollToCitation(id);
+        }
+    });
 });
 
-async function loadModels() {
-    try {
-        const [models, settings] = await Promise.all([
-            API.fetchModels(),
-            API.fetchSettings()
-        ]);
-        
-        // 1. Render options filtered by provider if any
-        renderModelOptions(models, settings.gen_provider);
-        
-        // 2. FORCE SELECT the saved model from settings
-        if (settings.gen_provider && settings.gen_model) {
-            const savedValue = `${settings.gen_provider}:${settings.gen_model}`;
-            UI.elements.modelSelector.value = savedValue;
-            console.log("📍 Default model set to:", savedValue);
+function scrollToCitation(id) {
+    const targetElId = `source-card-${id}`;
+    
+    // Open right sidebar if collapsed
+    if (UI.elements.sourcesPanel && UI.elements.sourcesPanel.classList.contains('collapsed')) {
+        UI.elements.sourcesPanel.classList.remove('collapsed');
+    }
+
+    const tryHighlight = () => {
+        const targetEl = document.getElementById(targetElId);
+        if (targetEl) {
+            targetEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            targetEl.classList.remove('highlight-animation');
+            // Trigger reflow to restart animation
+            void targetEl.offsetWidth;
+            targetEl.classList.add('highlight-animation');
+            return true;
         }
-    } catch (err) {
-        console.error("Failed to load models:", err);
+        return false;
+    };
+
+    if (!tryHighlight()) {
+        // Source card might not be rendered yet, use MutationObserver
+        const observer = new MutationObserver((mutations, obs) => {
+            if (tryHighlight()) {
+                obs.disconnect();
+            }
+        });
+        if (UI.elements.sourcesList) {
+            observer.observe(UI.elements.sourcesList, { childList: true, subtree: true });
+            // Timeout to prevent memory leak if source never appears
+            setTimeout(() => observer.disconnect(), 5000);
+        }
     }
 }
+
+
+
+
 
 async function loadHistory() {
     try {
@@ -126,16 +153,11 @@ async function handleSend() {
     const isAgentic = UI.elements.agenticToggle ? UI.elements.agenticToggle.checked : false;
     const { contentEl, thoughtEl, messageEl } = UI.addAIMessage(isAgentic);
 
-    // Get selected model
-    const [provider, model] = UI.elements.modelSelector.value.split(':');
-
     try {
         const response = await API.ask({
             query,
             use_hyde: UI.elements.hydeToggle ? UI.elements.hydeToggle.checked : false,
             mode: isAgentic ? 'agentic' : 'classic',
-            provider,
-            model,
             chat_id: currentChatId
         });
 

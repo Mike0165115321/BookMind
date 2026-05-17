@@ -12,6 +12,26 @@ export const API = {
         }
     },
 
+    async fetchPersonas() {
+        try {
+            const res = await fetch('/api/personas');
+            return await res.json();
+        } catch (err) {
+            console.error("API Error: Failed to fetch personas", err);
+            return {};
+        }
+    },
+
+    async createPersona(data) {
+        const response = await fetch('/api/personas', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+        if (!response.ok) throw new Error('API request failed');
+        return await response.json();
+    },
+
     async ask({ query, use_hyde, mode, provider, model, chat_id }) {
         const response = await fetch('/api/ask', {
             method: 'POST',

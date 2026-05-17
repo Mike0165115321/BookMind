@@ -165,6 +165,47 @@
             </div>
         </div>
 
+        <!-- ── Persona Section ── -->
+        <div class="settings-section">
+            <div class="section-header">
+                <h2>🎭 Persona Settings (บทบาทของ AI)</h2>
+            </div>
+            <div class="section-content">
+                <div class="form-row">
+                    <div class="form-group" style="display: flex; gap: 10px; align-items: flex-end;">
+                        <div style="flex: 1;">
+                            <label>เลือก Persona</label>
+                            <select id="personaId" class="form-select"></select>
+                        </div>
+                        <button id="showAddPersonaBtn" class="primary-btn" style="padding: 12px; white-space: nowrap; height: 46px; background: rgba(255,255,255,0.1); border: 1px solid var(--border);">
+                            <i class="fas fa-plus"></i> เพิ่มบทบาท
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Add Persona Form (Hidden by default) -->
+                <div id="addPersonaForm" style="display: none; margin-top: 20px; padding: 20px; background: rgba(0,0,0,0.2); border-radius: var(--radius-md); border: 1px solid var(--border);">
+                    <h3 style="margin-top: 0; margin-bottom: 16px; font-size: 15px; color: var(--accent-dim);">สร้างบทบาทใหม่</h3>
+                    <div class="form-group" style="margin-bottom: 12px;">
+                        <label>ชื่อบทบาท (Label)</label>
+                        <input type="text" id="newPersonaLabel" class="form-select" placeholder="เช่น ผู้ช่วยนักการตลาด">
+                    </div>
+                    <div class="form-group" style="margin-bottom: 12px;">
+                        <label>คำอธิบายสั้นๆ</label>
+                        <input type="text" id="newPersonaDesc" class="form-select" placeholder="อธิบายหน้าที่สั้นๆ">
+                    </div>
+                    <div class="form-group" style="margin-bottom: 16px;">
+                        <label>System Prompt (คำสั่งควบคุมบทบาท)</label>
+                        <textarea id="newPersonaPrompt" class="form-select" rows="4" placeholder="พิมพ์คำสั่งให้ AI สวมบทบาท..." style="resize: vertical;"></textarea>
+                    </div>
+                    <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                        <button id="cancelAddPersonaBtn" class="back-btn" style="padding: 8px 16px;">ยกเลิก</button>
+                        <button id="saveNewPersonaBtn" class="primary-btn" style="padding: 8px 16px;">บันทึกบทบาท</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <div class="save-bar" style="display: flex; justify-content: flex-end;">
             <button id="saveBtn" class="primary-btn" style="padding: 12px 40px; font-size: 16px;">
                 <i class="fas fa-save" style="margin-right: 10px;"></i> บันทึกการตั้งค่า
@@ -176,6 +217,20 @@
         import { API } from '/static/js/api.js';
 
         let allModels = {};
+
+        async function loadPersonasUI() {
+            const personas = await API.fetchPersonas();
+            const pSelect = document.getElementById('personaId');
+            pSelect.innerHTML = '';
+            const pData = personas.personas || {};
+            for (const [id, p] of Object.entries(pData)) {
+                const opt = document.createElement('option');
+                opt.value = id;
+                opt.textContent = p.meta?.label || id;
+                pSelect.appendChild(opt);
+            }
+            return personas;
+        }
 
         async function init() {
             try {
@@ -189,6 +244,15 @@
                 setupSection('hyde', settings.hyde_provider, settings.hyde_model);
                 setupSection('agentic', settings.agentic_provider || 'groq', settings.agentic_model);
                 setupSection('gen', settings.gen_provider, settings.gen_model);
+
+                // Setup Persona Section
+                const personasData = await loadPersonasUI();
+                const pSelect = document.getElementById('personaId');
+                if (settings.persona_id) {
+                    pSelect.value = settings.persona_id;
+                } else if (personasData.default) {
+                    pSelect.value = personasData.default;
+                }
 
             } catch (err) {
                 console.error("Init failed:", err);
@@ -258,7 +322,8 @@
                 agentic_provider: document.getElementById('agenticProvider').value,
                 agentic_model: document.getElementById('agenticModel').value,
                 gen_provider: document.getElementById('genProvider').value,
-                gen_model: document.getElementById('genModel').value
+                gen_model: document.getElementById('genModel').value,
+                persona_id: document.getElementById('personaId').value
             };
 
             try {
@@ -266,6 +331,50 @@
                 alert("✨ บันทึกการตั้งค่าเรียบร้อยแล้ว!");
             } catch (err) {
                 alert("❌ เกิดข้อผิดพลาดในการบันทึก");
+            }
+        });
+
+        // Add Persona Logic
+        const formEl = document.getElementById('addPersonaForm');
+        document.getElementById('showAddPersonaBtn').addEventListener('click', () => {
+            formEl.style.display = 'block';
+        });
+
+        document.getElementById('cancelAddPersonaBtn').addEventListener('click', () => {
+            formEl.style.display = 'none';
+        });
+
+        document.getElementById('saveNewPersonaBtn').addEventListener('click', async () => {
+            const label = document.getElementById('newPersonaLabel').value.trim();
+            const desc = document.getElementById('newPersonaDesc').value.trim();
+            const prompt = document.getElementById('newPersonaPrompt').value.trim();
+
+            if (!label || !prompt) {
+                alert("กรุณากรอกชื่อบทบาทและ System Prompt");
+                return;
+            }
+
+            try {
+                const res = await API.createPersona({
+                    label: label,
+                    description: desc,
+                    system_role: prompt
+                });
+                
+                if (res.status === 'created') {
+                    // Reload personas
+                    await loadPersonasUI();
+                    // Select new
+                    document.getElementById('personaId').value = res.id;
+                    // Reset and hide form
+                    document.getElementById('newPersonaLabel').value = '';
+                    document.getElementById('newPersonaDesc').value = '';
+                    document.getElementById('newPersonaPrompt').value = '';
+                    formEl.style.display = 'none';
+                    alert("✅ สร้างบทบาทใหม่เรียบร้อย อย่าลืมกดบันทึกการตั้งค่าด้านล่างด้วยนะครับ");
+                }
+            } catch (e) {
+                alert("❌ เกิดข้อผิดพลาด: " + e.message);
             }
         });
 

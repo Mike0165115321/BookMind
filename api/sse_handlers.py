@@ -5,7 +5,7 @@ import config
 from core.database import db
 from services.chat_service import chat_service
 
-async def classic_event_generator(query: str, use_hyde: bool, provider: str = "gemini", model: str = None, chat_id: str = None):
+async def classic_event_generator(query: str, use_hyde: bool, provider: str = "gemini", model: str = None, chat_id: str = None, persona_id: str = "default"):
     """Wraps ChatService classic pipeline with SSE formatting and DB persistence."""
     t_start = time.time()
     
@@ -19,8 +19,13 @@ async def classic_event_generator(query: str, use_hyde: bool, provider: str = "g
     # Send chat_id to frontend first
     yield {"event": "chat_id", "data": json.dumps({"chat_id": chat_id})}
 
+    # Emit session_init event with persona metadata
+    from services.persona_service import persona_service
+    p_config = persona_service.get_persona(persona_id)
+    yield {"event": "session_init", "data": json.dumps({"persona": p_config.get("meta", {})})}
+
     full_ai_response = ""
-    async for event in chat_service.run_classic_pipeline(query, use_hyde, provider, model):
+    async for event in chat_service.run_classic_pipeline(query, use_hyde, provider, model, persona_id=persona_id):
         e_type = event.get("type")
         
         if e_type == "status":
@@ -52,7 +57,7 @@ async def classic_event_generator(query: str, use_hyde: bool, provider: str = "g
             db.add_message(chat_id, "ai", full_ai_response, metadata=event)
             yield {"event": "done", "data": json.dumps(event)}
 
-async def agentic_event_generator(query: str, use_hyde: bool, provider: str = "gemini", model: str = None, chat_id: str = None):
+async def agentic_event_generator(query: str, use_hyde: bool, provider: str = "gemini", model: str = None, chat_id: str = None, persona_id: str = "default"):
     """Wraps ChatService agentic pipeline with SSE formatting and DB persistence."""
     t_start = time.time()
     stage_times = {
@@ -69,10 +74,15 @@ async def agentic_event_generator(query: str, use_hyde: bool, provider: str = "g
     db.add_message(chat_id, "user", query)
     yield {"event": "chat_id", "data": json.dumps({"chat_id": chat_id})}
 
+    # Emit session_init event with persona metadata
+    from services.persona_service import persona_service
+    p_config = persona_service.get_persona(persona_id)
+    yield {"event": "session_init", "data": json.dumps({"persona": p_config.get("meta", {})})}
+
     full_ai_response = ""
     last_stage_time = time.time()
     
-    async for event_wrapper in chat_service.run_agentic_pipeline(query, use_hyde, provider, model):
+    async for event_wrapper in chat_service.run_agentic_pipeline(query, use_hyde, provider, model, persona_id=persona_id):
         now = time.time()
         
         if event_wrapper["type"] == "status":

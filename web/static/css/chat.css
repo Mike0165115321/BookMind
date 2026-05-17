@@ -210,3 +210,36 @@
     transform: translateX(16px);
     background: var(--accent);
 }
+
+/* ── Citations & Highlights ── */
+.citation-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(59, 130, 246, 0.15); /* Blue tint */
+    color: #60a5fa; /* Blue-400 */
+    border-radius: 4px;
+    padding: 0 4px;
+    font-size: 11px;
+    font-weight: 600;
+    margin: 0 2px;
+    cursor: pointer;
+    vertical-align: super;
+    transition: var(--transition);
+    user-select: none;
+}
+
+.citation-badge:hover {
+    background: rgba(59, 130, 246, 0.3);
+    text-decoration: underline;
+}
+
+@keyframes highlight-fade {
+    0% { background-color: rgba(253, 224, 71, 0.4); } /* Yellow tint */
+    100% { background-color: transparent; }
+}
+
+.highlight-animation {
+    animation: highlight-fade 3s ease-out;
+    border-radius: 6px;
+}

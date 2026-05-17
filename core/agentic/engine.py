@@ -35,7 +35,8 @@ class AgenticEngine:
         hyde_provider: str = None,
         hyde_model: str = None,
         agentic_provider: str = None,
-        agentic_model: str = None
+        agentic_model: str = None,
+        persona_id: str = "default"
     ):
         self.searcher = searcher
         self.use_hyde = use_hyde
@@ -50,6 +51,7 @@ class AgenticEngine:
         # Settings for Decomposer & Evaluator
         self.agentic_provider = agentic_provider
         self.agentic_model = agentic_model
+        self.persona_id = persona_id
 
     def execute(self, query: str) -> Generator[InternalEngineEvent, None, None]:
         """
@@ -160,7 +162,8 @@ class AgenticEngine:
             search_results=memory.get_all_chunks(), 
             stream=True, 
             provider=self.provider, 
-            model_name=self.model_name
+            model_name=self.model_name,
+            persona_id=self.persona_id
         ):
             full_answer += chunk.text if hasattr(chunk, 'text') else str(chunk)
             yield InternalEngineEvent(event_type="token", data={"text": chunk})

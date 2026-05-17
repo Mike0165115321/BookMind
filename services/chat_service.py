@@ -22,7 +22,7 @@ class ChatService:
     def get_searcher(self):
         return self.searcher
 
-    async def run_classic_pipeline(self, query: str, use_hyde: bool = True, provider: str = "gemini", model_name: str = None):
+    async def run_classic_pipeline(self, query: str, use_hyde: bool = True, provider: str = "gemini", model_name: str = None, persona_id: str = "default"):
         """
         Executes the classic RAG pipeline.
         Yields status updates and final results (non-SSE).
@@ -60,7 +60,7 @@ class ChatService:
         # Capture response metadata from the generator loop if possible, 
         # but for streaming, the metadata usually comes at the end or we track it here.
         # Note: generator.generate returns a generator for streaming
-        for chunk in generate(query, results[:config.TOP_K_DISPLAY], stream=True, provider=p_name, model_name=model_name):
+        for chunk in generate(query, results[:config.TOP_K_DISPLAY], stream=True, provider=p_name, model_name=model_name, persona_id=persona_id):
             # Check if chunk is LLMStreamChunk
             text = chunk.text if hasattr(chunk, 'text') else str(chunk)
             yield {"type": "token", "text": text}
@@ -80,7 +80,7 @@ class ChatService:
             "total_time": round(total_time, 2),
         }
 
-    async def run_agentic_pipeline(self, query: str, use_hyde: bool = True, provider: str = "gemini", model_name: str = None):
+    async def run_agentic_pipeline(self, query: str, use_hyde: bool = True, provider: str = "gemini", model_name: str = None, persona_id: str = "default"):
         """
         Executes the agentic RAG pipeline.
         """
@@ -110,7 +110,8 @@ class ChatService:
             hyde_provider=h_p,
             hyde_model=h_m,
             agentic_provider=a_p,
-            agentic_model=a_m
+            agentic_model=a_m,
+            persona_id=persona_id
         )
         
         # We start with an initial status

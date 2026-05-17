@@ -198,8 +198,9 @@ export const UI = {
         sources.forEach((src) => {
             const card = document.createElement('div');
             card.className = 'source-card';
+            card.id = `source-card-${src.rank || (sources.indexOf(src) + 1)}`;
             card.innerHTML = `
-                <div class="source-title">📖 ${this.escapeHtml(src.title)}</div>
+                <div class="source-title">📖 [${src.rank || (sources.indexOf(src) + 1)}] ${this.escapeHtml(src.title)}</div>
                 <div class="source-text">${this.escapeHtml(src.text)}</div>
             `;
             this.elements.sourcesList.appendChild(card);
