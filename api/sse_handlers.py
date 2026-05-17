@@ -5,7 +5,7 @@ import config
 from core.database import db
 from services.chat_service import chat_service
 
-async def classic_event_generator(query: str, use_hyde: bool, provider: str = "gemini", model: str = None, chat_id: str = None, persona_id: str = "default"):
+async def classic_event_generator(query: str, use_hyde: bool, provider: str = "gemini", model: str = None, chat_id: str = None, persona_id: str = "default", temp_file_path: str = None, temp_file_name: str = None):
     """Wraps ChatService classic pipeline with SSE formatting and DB persistence."""
     t_start = time.time()
     
@@ -25,7 +25,7 @@ async def classic_event_generator(query: str, use_hyde: bool, provider: str = "g
     yield {"event": "session_init", "data": json.dumps({"persona": p_config.get("meta", {})})}
 
     full_ai_response = ""
-    async for event in chat_service.run_classic_pipeline(query, use_hyde, provider, model, persona_id=persona_id):
+    async for event in chat_service.run_classic_pipeline(query, use_hyde, provider, model, persona_id=persona_id, temp_file_path=temp_file_path, temp_file_name=temp_file_name):
         e_type = event.get("type")
         
         if e_type == "status":
@@ -57,7 +57,7 @@ async def classic_event_generator(query: str, use_hyde: bool, provider: str = "g
             db.add_message(chat_id, "ai", full_ai_response, metadata=event)
             yield {"event": "done", "data": json.dumps(event)}
 
-async def agentic_event_generator(query: str, use_hyde: bool, provider: str = "gemini", model: str = None, chat_id: str = None, persona_id: str = "default"):
+async def agentic_event_generator(query: str, use_hyde: bool, provider: str = "gemini", model: str = None, chat_id: str = None, persona_id: str = "default", temp_file_path: str = None, temp_file_name: str = None):
     """Wraps ChatService agentic pipeline with SSE formatting and DB persistence."""
     t_start = time.time()
     stage_times = {
@@ -82,7 +82,7 @@ async def agentic_event_generator(query: str, use_hyde: bool, provider: str = "g
     full_ai_response = ""
     last_stage_time = time.time()
     
-    async for event_wrapper in chat_service.run_agentic_pipeline(query, use_hyde, provider, model, persona_id=persona_id):
+    async for event_wrapper in chat_service.run_agentic_pipeline(query, use_hyde, provider, model, persona_id=persona_id, temp_file_path=temp_file_path, temp_file_name=temp_file_name):
         now = time.time()
         
         if event_wrapper["type"] == "status":

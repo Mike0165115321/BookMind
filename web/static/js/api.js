@@ -32,11 +32,11 @@ export const API = {
         return await response.json();
     },
 
-    async ask({ query, use_hyde, mode, provider, model, chat_id, persona_id }) {
+    async ask({ query, use_hyde, mode, provider, model, chat_id, persona_id, temp_file_path, temp_file_name }) {
         const response = await fetch('/api/ask', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ query, use_hyde, mode, provider, model, chat_id, persona_id })
+            body: JSON.stringify({ query, use_hyde, mode, provider, model, chat_id, persona_id, temp_file_path, temp_file_name })
         });
         if (!response.ok) throw new Error('API request failed');
         return response;

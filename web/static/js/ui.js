@@ -146,12 +146,25 @@ export const UI = {
         return el.innerHTML;
     },
 
-    addUserMessage(text) {
+    addUserMessage(text, fileInfo = null) {
         if (this.elements.welcomeHero) this.elements.welcomeHero.style.display = 'none';
         
         const el = document.createElement('div');
         el.className = 'message message-user';
-        el.innerHTML = `<div class="message-content">${this.escapeHtml(text)}</div>`;
+        
+        let contentHtml = this.escapeHtml(text);
+        
+        if (fileInfo && fileInfo.name) {
+            let fileHtml = `<div class="file-attachment-badge"><i class="fas fa-paperclip"></i> ${this.escapeHtml(fileInfo.name)}</div>`;
+            
+            if (fileInfo.type && fileInfo.type.startsWith('image/') && fileInfo.dataUrl) {
+                fileHtml += `<div class="file-preview-image"><img src="${fileInfo.dataUrl}" alt="${this.escapeHtml(fileInfo.name)}" /></div>`;
+            }
+            
+            contentHtml = fileHtml + contentHtml;
+        }
+        
+        el.innerHTML = `<div class="message-content">${contentHtml}</div>`;
         this.elements.chatMessages.appendChild(el);
         this.scrollToBottom();
     },

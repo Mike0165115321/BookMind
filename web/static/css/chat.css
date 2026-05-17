@@ -55,6 +55,53 @@
     transition: var(--transition);
 }
 
+.file-preview-container {
+    max-width: 800px;
+    margin: 0 auto 8px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+    padding: 6px 12px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 13px;
+    color: var(--text-main);
+    border: 1px solid var(--border);
+}
+
+#clearFileBtn {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    font-size: 16px;
+    padding: 0 4px;
+    transition: var(--transition);
+}
+
+#clearFileBtn:hover {
+    color: #ef4444;
+}
+
+.file-attachment-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(255, 255, 255, 0.1);
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 12px;
+    color: var(--text-main);
+    margin-bottom: 6px;
+}
+
+.file-preview-image img {
+    max-width: 200px;
+    border-radius: 8px;
+    margin-top: 6px;
+    display: block;
+}
+
 .floating-input-wrapper:focus-within {
     border-color: var(--accent-dim);
 }

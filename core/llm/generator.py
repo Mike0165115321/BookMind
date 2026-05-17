@@ -2,19 +2,24 @@ from core.prompts.prompt_registry import registry
 from core.llm.manager import llm_manager
 from core.llm.shared.types import Message, ProviderName, GenerationConfig
 
-def _build_context(search_results: list) -> str:
-    """Build context string from search results with document name labels."""
-    if not search_results:
-        return "ไม่พบข้อมูลที่เกี่ยวข้อง"
-
+def _build_context(search_results: list, temp_file_content: str = None) -> str:
+    """Build context string from optional file content and search results with labels."""
     context_parts = []
-    for i, (text, score) in enumerate(search_results):
-        doc_name = "ไม่ระบุ"
-        if text.startswith("[") and "]" in text:
-            doc_name = text.split("]")[0].lstrip("[")
+    
+    if temp_file_content:
+        context_parts.append(f"[SRC_1] (จาก: ไฟล์แนบของผู้ใช้)\n{temp_file_content}")
         
-        context_parts.append(f"[SRC_{i+1}] (จาก: {doc_name})\n{text}")
-
+    if search_results:
+        for i, (text, score) in enumerate(search_results):
+            src_id = len(context_parts) + 1
+            doc_name = "ไม่ระบุ"
+            if text.startswith("[") and "]" in text:
+                doc_name = text.split("]")[0].lstrip("[")
+            context_parts.append(f"[SRC_{src_id}] (จาก: {doc_name})\n{text}")
+            
+    if not context_parts:
+        return "ไม่พบข้อมูลที่เกี่ยวข้อง"
+        
     return "\n\n---\n\n".join(context_parts)
 
 def _build_prompt(query: str, context: str) -> str:
@@ -34,7 +39,8 @@ def generate(
     stream: bool = False, 
     provider: ProviderName = ProviderName.GEMINI,
     model_name: str = None,
-    persona_id: str = "default"
+    persona_id: str = "default",
+    temp_file_content: str = None
 ):
     """
     Generate an answer using the llm_manager.
@@ -89,7 +95,7 @@ def generate(
     config = GenerationConfig(**filtered_kwargs) if filtered_kwargs else None
     
     # 2. Build context and user prompt
-    context = _build_context(search_results)
+    context = _build_context(search_results, temp_file_content)
     prompt = _build_prompt(query, context)
     
     # 3. Create Message objects

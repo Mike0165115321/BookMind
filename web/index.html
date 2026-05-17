@@ -90,13 +90,19 @@
 
             <!-- Floating Input Area -->
             <div class="input-container">
+                <div id="filePreviewContainer" class="file-preview-container" style="display: none;">
+                    <span id="fileName"></span>
+                    <button id="clearFileBtn">&times;</button>
+                </div>
                 <div class="floating-input-wrapper">
                     <textarea id="queryInput" placeholder="Send a message" rows="1"></textarea>
                     
                     <div class="input-right-actions">
-                        <button class="input-action-btn" title="Add files">
+                        <button class="input-action-btn" id="uploadTempBtn" title="Add files">
                             <i class="fas fa-plus"></i>
                         </button>
+                        <input type="file" id="tempFileInput" style="display:none">
+                        
                         <button class="input-action-btn" title="Web Search">
                             <i class="fas fa-globe"></i>
                         </button>
@@ -151,6 +157,6 @@
     </div>
 
     <!-- JS Modules -->
-    <script type="module" src="/static/js/main.js"></script>
+    <script type="module" src="/static/js/main.js?v=5"></script>
 </body>
 </html>

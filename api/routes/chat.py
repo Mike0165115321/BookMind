@@ -1,11 +1,30 @@
 """
 Chat Routes — Endpoints for RAG Chat.
 """
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, Request, File, UploadFile
 from sse_starlette.sse import EventSourceResponse
 from api.sse_handlers import classic_event_generator, agentic_event_generator
+import os
+import uuid
+import config
 
 router = APIRouter(prefix="/api", tags=["Chat"])
+
+@router.post("/chat/upload_temp")
+async def upload_temp_file(file: UploadFile = File(...)):
+    try:
+        ext = os.path.splitext(file.filename)[1]
+        unique_filename = f"{uuid.uuid4()}{ext}"
+        upload_dir = os.path.join(config.DATA_DIR, "uploads")
+        os.makedirs(upload_dir, exist_ok=True)
+        file_path = os.path.join(upload_dir, unique_filename)
+        
+        with open(file_path, "wb") as f:
+            f.write(await file.read())
+            
+        return {"status": "uploaded", "file_path": file_path, "original_name": file.filename}
+    except Exception as e:
+        return {"status": "error", "error": str(e)}
 
 @router.post("/ask")
 async def ask_endpoint(request: Request):
@@ -20,6 +39,8 @@ async def ask_endpoint(request: Request):
     model = body.get("model")
     chat_id = body.get("chat_id") # Get chat_id from frontend
     persona_id = body.get("persona_id")
+    temp_file_path = body.get("temp_file_path")
+    temp_file_name = body.get("temp_file_name")
     
     from core.database import db
     if not persona_id:
@@ -33,9 +54,9 @@ async def ask_endpoint(request: Request):
         return {"error": "กรุณาพิมพ์คำถาม"}
 
     if mode == "agentic":
-        return EventSourceResponse(agentic_event_generator(query, use_hyde, provider, model, chat_id, persona_id))
+        return EventSourceResponse(agentic_event_generator(query, use_hyde, provider, model, chat_id, persona_id, temp_file_path, temp_file_name))
     else:
-        return EventSourceResponse(classic_event_generator(query, use_hyde, provider, model, chat_id, persona_id))
+        return EventSourceResponse(classic_event_generator(query, use_hyde, provider, model, chat_id, persona_id, temp_file_path, temp_file_name))
 
 @router.get("/chats")
 async def list_chats():

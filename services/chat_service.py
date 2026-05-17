@@ -22,7 +22,7 @@ class ChatService:
     def get_searcher(self):
         return self.searcher
 
-    async def run_classic_pipeline(self, query: str, use_hyde: bool = True, provider: str = "gemini", model_name: str = None, persona_id: str = "default"):
+    async def run_classic_pipeline(self, query: str, use_hyde: bool = True, provider: str = "gemini", model_name: str = None, persona_id: str = "default", temp_file_path: str = None, temp_file_name: str = None):
         """
         Executes the classic RAG pipeline.
         Yields status updates and final results (non-SSE).
@@ -34,7 +34,7 @@ class ChatService:
         # 1. HyDE
         search_query = query
         hyde_time = 0
-        if use_hyde and config.ENABLE_HYDE:
+        if use_hyde and config.ENABLE_HYDE and not temp_file_path: # Skip HyDE if file uploaded
             from core.database import db
             h_p = db.get_setting("hyde_provider", provider)
             h_m = db.get_setting("hyde_model", model_name)
@@ -44,12 +44,31 @@ class ChatService:
             search_query = await asyncio.to_thread(hyde_transform, query, provider=ProviderName(h_p), model_name=h_m)
             hyde_time = time.time() - t_hyde
             yield {"type": "hyde", "hyde_query": search_query[:200], "time": round(hyde_time, 2)}
-
+ 
         # 2. Search
-        yield {"type": "status", "stage": "search", "message": "🔍 กำลังค้นหา..."}
-        t_search = time.time()
-        results = await asyncio.to_thread(self.searcher.search, search_query, config.TOP_K_RETRIEVAL)
-        search_time = time.time() - t_search
+        results = []
+        search_time = 0
+        temp_file_content = None
+        
+        if temp_file_path:
+            yield {"type": "status", "stage": "search", "message": "📄 กำลังอ่านไฟล์แนบ..."}
+            from core.document_loader import DocumentLoader
+            import os
+            try:
+                docs = DocumentLoader.load(temp_file_path)
+                if docs:
+                    temp_file_content = "\n".join([doc["content"] for doc in docs])
+                    # Use provided name or fallback to path basename
+                    display_name = temp_file_name or os.path.basename(temp_file_path)
+                    # Add to results for UI display with correct format
+                    results.append((f"[{display_name}] เนื้อหาจากไฟล์แนบ", 1.0))
+            except Exception as e:
+                print(f"❌ Error loading temp file: {e}")
+        else:
+            yield {"type": "status", "stage": "search", "message": "🔍 กำลังค้นหา..."}
+            t_search = time.time()
+            results = await asyncio.to_thread(self.searcher.search, search_query, config.TOP_K_RETRIEVAL)
+            search_time = time.time() - t_search
         
         yield {"type": "sources", "results": results, "search_time": search_time}
 
@@ -60,7 +79,7 @@ class ChatService:
         # Capture response metadata from the generator loop if possible, 
         # but for streaming, the metadata usually comes at the end or we track it here.
         # Note: generator.generate returns a generator for streaming
-        for chunk in generate(query, results[:config.TOP_K_DISPLAY], stream=True, provider=p_name, model_name=model_name, persona_id=persona_id):
+        for chunk in generate(query, results[:config.TOP_K_DISPLAY], stream=True, provider=p_name, model_name=model_name, persona_id=persona_id, temp_file_content=temp_file_content):
             # Check if chunk is LLMStreamChunk
             text = chunk.text if hasattr(chunk, 'text') else str(chunk)
             yield {"type": "token", "text": text}
@@ -80,7 +99,7 @@ class ChatService:
             "total_time": round(total_time, 2),
         }
 
-    async def run_agentic_pipeline(self, query: str, use_hyde: bool = True, provider: str = "gemini", model_name: str = None, persona_id: str = "default"):
+    async def run_agentic_pipeline(self, query: str, use_hyde: bool = True, provider: str = "gemini", model_name: str = None, persona_id: str = "default", temp_file_path: str = None, temp_file_name: str = None):
         """
         Executes the agentic RAG pipeline.
         """

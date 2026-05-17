@@ -65,7 +65,7 @@ BATCH_SIZE = 32        # Embedding batch size (adjust based on VRAM)
 # ──────────────────────────────────────────────
 # Sentence Compression
 # ──────────────────────────────────────────────
-COMPRESSION_ENABLED = True
+COMPRESSION_ENABLED = False
 COMPRESSION_EMBEDDING_THRESHOLD = 0.45  # Minimum cosine similarity for sentence
 COMPRESSION_TOP_N_SIMPLE = 5            # Top-N sentences for simple query
 COMPRESSION_TOP_N_COMPLEX = 12          # Top-N sentences for complex query

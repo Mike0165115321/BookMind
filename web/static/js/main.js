@@ -1,9 +1,10 @@
 /**
  * Main Application Entry Point
  */
-import { API } from './api.js';
-import { UI } from './ui.js';
-import { Chat } from './chat.js';
+import { API } from './api.js?v=4';
+import { UI } from './ui.js?v=4';
+import { Chat } from './chat.js?v=4';
+import { initChatFiles, getCurrentTempFile, clearFile, getCurrentFileInfo } from './chat_files.js?v=4';
 
 let currentChatId = null;
 let currentPersonaId = 'general_assistant';
@@ -11,6 +12,7 @@ let currentPersonaId = 'general_assistant';
 document.addEventListener('DOMContentLoaded', async () => {
     // 1. Initial Load
     UI.init();
+    initChatFiles();
     loadHistory();
     loadPersonasForMenu();
 
@@ -196,8 +198,11 @@ async function handleSend() {
     const query = UI.elements.queryInput.value.trim();
     if (!query) return;
 
+    const tempFilePath = getCurrentTempFile();
+    const fileInfo = getCurrentFileInfo();
+
     // UI Feedback
-    UI.addUserMessage(query);
+    UI.addUserMessage(query, fileInfo);
     UI.elements.queryInput.value = '';
     UI.elements.queryInput.style.height = 'auto';
     
@@ -210,8 +215,12 @@ async function handleSend() {
             use_hyde: UI.elements.hydeToggle ? UI.elements.hydeToggle.checked : false,
             mode: isAgentic ? 'agentic' : 'classic',
             chat_id: currentChatId,
-            persona_id: currentPersonaId
+            persona_id: currentPersonaId,
+            temp_file_path: tempFilePath,
+            temp_file_name: fileInfo ? fileInfo.name : null
         });
+
+        // clearFile(); // Removed so the file persists for follow-up questions in the chat session
 
         await Chat.handleStream(
             response.body.getReader(), 

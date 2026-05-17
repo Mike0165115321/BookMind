@@ -165,5 +165,12 @@ class DocumentLoader:
         try:
             with open(filepath, "r", encoding="utf-8") as f:
                 return [{"content": f.read(), "metadata_prefix": f"[{book_title}]" if book_title else ""}]
-        except:
-            return []
+        except Exception as e:
+            print(f"❌ Error loading text file: {e}")
+            # Fallback to ignore encoding errors
+            try:
+                with open(filepath, "r", encoding="utf-8", errors="ignore") as f:
+                    return [{"content": f.read(), "metadata_prefix": f"[{book_title}]" if book_title else ""}]
+            except Exception as e2:
+                print(f"❌ Critical error loading text file: {e2}")
+                return []

@@ -127,14 +127,27 @@ class SentenceCompressor:
         # Take Top-N
         top_results = reranked_results[:top_n]
         
-        # Reconstruct "[DocName] Sentence" format
+        # Reconstruct "[DocName] Context Window" format
         final_results = []
         for sent, score in top_results:
             # Find the original doc_name for this sentence
-            # Note: This is an approximation since sentences could theoretically be duplicated
             idx = all_sentences.index(sent)
             d_name = doc_names[idx]
-            formatted_text = f"[{d_name}] {sent}"
-            final_results.append((formatted_text, score))
+            
+            # Extract window (-1 to +1) to provide context
+            start_idx = max(0, idx - 1)
+            end_idx = min(len(all_sentences) - 1, idx + 1)
+            
+            window_sentences = []
+            for j in range(start_idx, end_idx + 1):
+                if doc_names[j] == d_name:
+                    window_sentences.append(all_sentences[j])
+                    
+            context_window = " ".join(window_sentences)
+            formatted_text = f"[{d_name}] {context_window}"
+            
+            # Avoid exact duplicates if windows overlap
+            if not any(context_window in r[0] for r in final_results):
+                final_results.append((formatted_text, score))
             
         return final_results
