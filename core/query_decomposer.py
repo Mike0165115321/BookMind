@@ -45,11 +45,15 @@ def decompose(query: str, agentic_provider: str, agentic_model: str) -> Decompos
         sub_queries = parsed.get("sub_queries", [query])
         reasoning = parsed.get("reasoning", "")
 
+        import config
+        context_budget = config.COMPRESSION_TOP_N_COMPLEX if query_type == "complex" else config.COMPRESSION_TOP_N_SIMPLE
+
         result = DecompositionResult(
             query_type=query_type,
             sub_queries=sub_queries,
             reasoning=reasoning,
             original_query=query,
+            context_budget=context_budget
         )
 
         print(f"   🔀 Decompose: {query_type} → {len(sub_queries)} sub-queries (via {p_enum}:{m_name})")

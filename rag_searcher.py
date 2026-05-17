@@ -24,5 +24,5 @@ class RAGSearcher:
         self.data = self.pipeline.data
         return success
 
-    def search(self, query, top_k=None):
-        return self.pipeline.search(query, top_k)
+    def search(self, query, top_k=None, context_budget=None):
+        return self.pipeline.search(query, top_k, context_budget=context_budget)

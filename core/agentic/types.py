@@ -28,6 +28,7 @@ class DecompositionResult:
     sub_queries: List[str]
     reasoning: str = ""
     original_query: str = ""
+    context_budget: int = 5
 
 @dataclass
 class EvaluationResult:

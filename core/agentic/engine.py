@@ -96,7 +96,7 @@ class AgenticEngine:
                 )
 
                 # Agentic loop uses raw sub-queries for retrieval (No HyDE to save cost/time)
-                results = self.searcher.search(sq, top_k=config.TOP_K_RETRIEVAL)
+                results = self.searcher.search(sq, top_k=config.TOP_K_RETRIEVAL, context_budget=decomp.context_budget)
                 new_count = memory.add_search_results(sq, results, iteration)
 
                 iter_record = {

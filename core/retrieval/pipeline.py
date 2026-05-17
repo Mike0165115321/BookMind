@@ -19,6 +19,12 @@ class RetrievalPipeline:
         self.bm25_searcher = BM25Searcher()
         self.reranker = Reranker()
         self.data = []
+        
+        if getattr(config, 'COMPRESSION_ENABLED', False):
+            from core.retrieval.compressor import SentenceCompressor
+            self.compressor = SentenceCompressor(self.dense_searcher.model, self.reranker.model)
+        else:
+            self.compressor = None
 
     def load_index(self, storage_dir: str = None, index_name: str = None):
         """Load all index components from disk."""
@@ -54,7 +60,7 @@ class RetrievalPipeline:
             print(f"❌ Reload failed: {e}")
             return False
 
-    def search(self, query: str, top_k: int = None):
+    def search(self, query: str, top_k: int = None, context_budget: int = None):
         """Execute the full retrieval pipeline."""
         top_k = top_k or config.TOP_K_RETRIEVAL
 
@@ -78,8 +84,16 @@ class RetrievalPipeline:
 
         if need_rerank:
             print(f"   🔬 Reranking (gap={gap:.3f} ≤ {config.RERANK_SCORE_GAP}) → Cross-Encoder")
-            return self.reranker.rerank(query, retrieved_docs, merged_scores_list)
+            final_results = self.reranker.rerank(query, retrieved_docs, merged_scores_list)
         else:
             print(f"   ⚡ Skip Reranker (gap={gap:.3f} > {config.RERANK_SCORE_GAP}) → Fast mode")
             results = list(zip(retrieved_docs, merged_scores_list))
-            return [r for r in results if r[1] >= config.RELEVANCE_THRESHOLD]
+            final_results = [r for r in results if r[1] >= config.RELEVANCE_THRESHOLD]
+            
+        if getattr(config, 'COMPRESSION_ENABLED', False) and self.compressor:
+            budget = context_budget or getattr(config, 'COMPRESSION_TOP_N_SIMPLE', 5)
+            doc_texts = [r[0] for r in final_results]
+            print(f"   ✂️  Compressing {len(doc_texts)} chunks into Top-{budget} sentences")
+            return self.compressor.compress(query, doc_texts, budget)
+            
+        return final_results

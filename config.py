@@ -63,6 +63,16 @@ RELEVANCE_THRESHOLD = 0.15  # Minimum score to be considered relevant (0.0 - 1.0
 BATCH_SIZE = 32        # Embedding batch size (adjust based on VRAM)
 
 # ──────────────────────────────────────────────
+# Sentence Compression
+# ──────────────────────────────────────────────
+COMPRESSION_ENABLED = True
+COMPRESSION_EMBEDDING_THRESHOLD = 0.45  # Minimum cosine similarity for sentence
+COMPRESSION_TOP_N_SIMPLE = 5            # Top-N sentences for simple query
+COMPRESSION_TOP_N_COMPLEX = 12          # Top-N sentences for complex query
+COMPRESSION_MIN_SENTENCE_LENGTH = 10    # Minimum chars to keep a sentence
+
+
+# ──────────────────────────────────────────────
 # Agentic RAG
 # ──────────────────────────────────────────────
 AGENTIC_MAX_ITERATIONS = 3        # Max search loop iterations (prevents infinite loops)
