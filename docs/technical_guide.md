@@ -1,9 +1,9 @@
 # 📘 เอกสารอธิบายระบบ RAG อย่างละเอียด
-# RAG System — Technical Documentation (v4.0)
+# RAG System — Technical Documentation (v4.1)
 **Developed by [Aetox.dev](https://aetox.dev)**
 
 > เอกสารฉบับนี้อธิบายการทำงานของระบบ RAG (Retrieval-Augmented Generation) **แบบ End-to-End** ทุกขั้นตอน
-> ครอบคลุมตั้งแต่ Query Transform (HyDE), Hybrid Search, Adaptive Reranking, **✂️ Sentence-Level Context Compression**, LLM Generation (Gemini), **🧠 Agentic RAG** (Query Decomposition + Multi-hop Retrieval), จนถึง Web UI
+> ครอบคลุมตั้งแต่ Query Transform (HyDE), Hybrid Search, Adaptive Reranking, **✂️ Sentence-Level Context Compression**, LLM Generation (Gemini), **🧠 Agentic RAG** (Query Decomposition + Multi-hop Retrieval), **🌐 Web Search (Exclusive Pipeline)** จนถึง Web UI
 
 ---
 
@@ -30,6 +30,9 @@
 18. [Flow Chart — ภาพรวมทุกขั้นตอน](#18-flow-chart--ภาพรวมทุกขั้นตอน)
 19. [🧠 Agentic RAG — Multi-hop Retrieval](#19-agentic-rag--multi-hop-retrieval)
 20. [🎭 Persona Management System](#20-persona-management-system)
+21. [🌐 Web Search (DuckDuckGo)](#21-web-search-duckduckgo)
+22. [📄 File Upload (In-memory Document Loader)](#22-file-upload-in-memory-document-loader)
+23. [🔀 Mutually Exclusive Pipeline (Architecture)](#23-mutually-exclusive-pipeline-architecture)
 
 ---
 
@@ -1473,6 +1476,48 @@ sequenceDiagram
 
 ---
 
+## 21. 🌐 Web Search (DuckDuckGo)
+
+ระบบค้นหาข้อมูลผ่านอินเทอร์เน็ตแบบ Real-time เพื่อลดปัญหาการหลอน (Hallucination) หรือตอบคำถามที่ข้อมูลใน RAG ไม่ครอบคลุม (เช่น ข่าวสารปัจจุบัน, ข้อมูลล่าสุด)
+
+### โครงสร้างการทำงาน
+- **Library:** ใช้ `duckduckgo-search` (`ddgs`) ซึ่งเป็นไลบรารีที่ไม่ต้องใช้ API Key และติดตั้งได้ง่าย
+- **Pipeline:** ถูกออกแบบมาเป็นแบบ **Exclusive** (อ่านเพิ่มเติมที่ส่วน 23)
+- **Agentic Integration:** ในโหมด Agentic RAG ระบบสามารถดึง Web Search มาใช้ใน sub-queries แต่ละขั้นตอนได้ หากเปิดโหมด Web
+
+---
+
+## 22. 📄 File Upload (In-memory Document Loader)
+
+ระบบรองรับการอัปโหลดไฟล์ผ่าน Web UI แบบชั่วคราว (Session-based) เพื่อให้ผู้ใช้ "พูดคุย" กับไฟล์เฉพาะกิจโดยไม่ต้อง Ingest เข้าสู่ Vector Database หลัก
+
+### โครงสร้างการทำงาน
+- **Temp File Storage:** ไฟล์ถูกอัปโหลดและประมวลผลทันทีในหน่วยความจำ
+- **Pipeline Bypass:** เมื่อมีไฟล์แนบ ระบบจะข้ามการดึงข้อมูลจาก FAISS/BM25 และนำเนื้อหาในไฟล์ส่งให้ LLM โดยตรง
+- **Persistence:** ไฟล์แนบจะคงอยู่ใน Context ของ UI จนกว่าผู้ใช้จะกดกากบาท (Remove File) ทำให้สามารถถามคำถามต่อเนื่องเกี่ยวกับไฟล์นั้นได้
+
+---
+
+## 23. 🔀 Mutually Exclusive Pipeline (Architecture)
+
+สถาปัตยกรรมของ BookMind v4.1 ถูกออกแบบด้วยหลักการ **Single Responsibility Principle (SRP)** และ **Separation of Concerns (SoC)** ทำให้การไหลของข้อมูล (Data Flow) เดินเป็นท่อทางเดียวที่ชัดเจน ไม่มี Technical Debt หรือ Spaghetti Code
+
+### องค์ประกอบของท่อข้อมูล
+ระบบใช้โครงสร้าง `if / elif / else` ในการเลือกแหล่งที่มาของข้อมูลเพียงแหล่งเดียว (Mutually Exclusive) เพื่อป้องกัน Context Contamination (การปนกันของข้อมูล):
+
+1. **ท่อ Web Search (`if use_web_search:`):** 
+   - ดึงข้อมูลจาก DuckDuckGo อย่างเดียว 
+   - **ข้าม** การโหลดไฟล์และการค้นหา RAG ทั้งหมด
+2. **ท่อ Upload File (`elif temp_file_path:`):** 
+   - ดึงเนื้อหาจากไฟล์แนบ 
+   - **ข้าม** การค้นหา RAG ทิ้ง
+3. **ท่อ RAG ปกติ (`else:`):** 
+   - หากไม่มีการเปิดเว็บหรืออัปโหลดไฟล์ ระบบจึงจะเข้าสู่ท่อ RAG (Dense + BM25 + Rerank)
+
+การออกแบบนี้การันตีความโปร่งใสของข้อมูล ป้องกันไม่ให้ AI สับสนระหว่างข้อมูลภายในและข้อมูลจากภายนอก และเอื้อต่อการขยายสเกลในอนาคต (Scalability)
+
+---
+
 > 📅 **Last Updated:** May 2026
 > 📝 **Author:** Antigravity AI
-> 🔖 **Version:** 4.1 — **Persona Management & Interactive UI**
+> 🔖 **Version:** 4.1 — **Persona Management, Web Search & Architecture Pipeline**

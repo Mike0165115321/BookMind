@@ -4,8 +4,8 @@
 
 **Developed by [Aetox.dev](https://aetox.dev)**
 
-> **สถานะ:** ✅ System Stable & Optimized (v4.0)  
-> **Version:** 4.0 — Sentence-Level Context Compression + Persona Management + Agentic Evaluation
+> **สถานะ:** ✅ System Stable & Optimized (v4.1)  
+> **Version:** 4.1 — Web Search (DuckDuckGo) + Sentence-Level Context Compression + Persona Management + Agentic Evaluation
 
 📘 **[เอกสารเทคนิคฉบับเต็ม (Technical Guide)](docs/technical_guide.md)**
 📘 **[แผนการพัฒนาระบบ (Sentence Compression Plan)](docs/sentence_compression_plan.md)**
@@ -34,17 +34,20 @@
 3. **Retrieval Pipeline (`core/retrieval/`)**: แยกขั้นตอน Tokenize, Search (Dense/BM25) และ Rerank
 4. **Agentic Engine (`core/agentic/`)**: แยก Business Logic ของการคิดวิเคราะห์ออกจาก UI
 5. **LLM & Prompt Management (`core/llm/`, `core/prompts/`)**: แยก Prompt templates ออกเป็นไฟล์ และจัดการ LLM Provider อิสระ
+6. **Web Searcher (`core/web_searcher.py`)**: ค้นหาข้อมูลจากอินเทอร์เน็ตแบบ Real-time (DuckDuckGo)
 
 ```mermaid
 graph TD
     UI[Web UI / JS] <--> API[FastAPI Routers]
     API <--> CHAT[Chat Service]
     CHAT <--> RET[Retrieval Pipeline]
+    CHAT <--> WEB[Web Searcher]
     CHAT <--> AGENT[Agentic Engine]
     CHAT <--> GEN[LLM Generator]
     
     AGENT <--> DEC[Query Decomposer]
     AGENT <--> EVAL[Sufficiency Evaluator]
+    AGENT <--> WEB
     
     RET <--> FAISS[FAISS Index]
     RET <--> BM25[BM25 Corpus]
@@ -58,6 +61,7 @@ graph TD
 
 | Stage | Method | หน้าที่ | ทำงานบน |
 |-------|--------|---------|---------|
+| **W1** | Web Search (DuckDuckGo) | 🌐 ค้นหาข้อมูลล่าสุดจากอินเทอร์เน็ต (ถ้าเปิดโหมด Web) | Cloud API |
 | **0** | HyDE (Groq LLaMA) | สร้างเอกสารสมมติเพื่อปรับปรุงคำค้น | Cloud API |
 | **1a** | Dense (FAISS) | จับ "ความหมาย" — คำต่างกันแต่หมายถึงเรื่องเดียวกัน | GPU |
 | **1b** | BM25 (Sparse) | จับ "คำตรงกัน" — ชื่อคน, ชื่อหนังสือ, ศัพท์เฉพาะ | CPU |
@@ -309,8 +313,9 @@ GROQ_TEMPERATURE=0.7
 - [x] 🎭 Persona Management — ระบบสลับบทบาท (ครู, นักกฎหมาย, นักบัญชี ฯลฯ)
 - [x] 🎛️ Interactive Pill Toggles — สวิตช์เปิด/ปิด HyDE และ Agentic แบบใหม่ พร้อมเงื่อนไขการทำงานร่วมกัน
 - [x] ✂️ Sentence-Level Context Compression — ลดขนาด context แต่รักษาความถูกต้อง
+- [x] 🌐 Web Search (DuckDuckGo) — ค้นหาข้อมูลแบบ Real-time และแยก Pipeline ชัดเจน
+- [x] 📄 Document Upload (TXT/MD via Web UI) — อัปโหลดไฟล์เพื่อคุยกับไฟล์โดยตรง
 - [ ] Conversation Memory (multi-turn)
-- [ ] Document Upload (PDF/TXT via Web UI)
 - [ ] Multi-Agent System (specialized agents per domain)
 
 ---
