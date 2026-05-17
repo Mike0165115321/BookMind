@@ -14,14 +14,17 @@
 
 ## 📸 Screenshots
 
-### หน้า Welcome — Dark Theme + Suggestion Chips
-![Web UI Welcome](docs/images/web-ui-welcome.png)
+### หน้าแรก (Welcome Page) — Dark Theme + Suggestion Chips
+![Web UI Welcome](docs/images/หน้าแรก.png)
 
-### ผลลัพธ์การค้นหา — คำตอบ + แหล่งอ้างอิง (ไม่เปิด HyDE)
-![Web UI Answer](docs/images/web-ui-answer.png)
+### หน้าตอบคำถาม — ผลลัพธ์การค้นหา + แหล่งอ้างอิง
+![Web UI Answer](docs/images/หน้าตอบคำถาม.png)
 
-### ผลลัพธ์ด้วย HyDE — Timing ครบทุก Stage
-![Web UI Timing](docs/images/web-ui-timing.png)
+### หน้าเพิ่มข้อมูล (Admin Panel) — สำหรับจัดการเอกสาร
+![Web UI Admin](docs/images/หน้าเพิ่มข้อมูล.png)
+
+### หน้าการตั้งค่า (Settings Page) — สำหรับตั้งค่าระบบ
+![Web UI Settings](docs/images/ตั้งค่า.png)
 
 ---
 
