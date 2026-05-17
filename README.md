@@ -4,10 +4,11 @@
 
 **Developed by [Aetox.dev](https://aetox.dev)**
 
-> **สถานะ:** ✅ System Stable & Optimized (v3.6)  
-> **Version:** 3.6 — Persona Management + Interactive Pill Toggles + Conditional Logic + Performance Monitor
+> **สถานะ:** ✅ System Stable & Optimized (v4.0)  
+> **Version:** 4.0 — Sentence-Level Context Compression + Persona Management + Agentic Evaluation
 
 📘 **[เอกสารเทคนิคฉบับเต็ม (Technical Guide)](docs/technical_guide.md)**
+📘 **[แผนการพัฒนาระบบ (Sentence Compression Plan)](docs/sentence_compression_plan.md)**
 
 ---
 
@@ -62,7 +63,8 @@ graph TD
 | **1b** | BM25 (Sparse) | จับ "คำตรงกัน" — ชื่อคน, ชื่อหนังสือ, ศัพท์เฉพาะ | CPU |
 | **2** | Score Merge | รวม Dense (70%) + BM25 (30%) แล้ว normalize | CPU |
 | **3** | Adaptive Reranker | ⚡ Skip ถ้าชัด / 🔬 Rerank ถ้ากำกวม (gap ≤ 0.15) | GPU |
-| **4** | Gemini Generation | สร้างคำตอบ SSE streaming จากเนื้อหาที่ค้นเจอ | Cloud API |
+| **4** | Sentence Compressor | ✂️ ตัด Chunk เป็นประโยค + กรองหยาบ (Embedding) + จัดเรียงใหม่ (Cross-Encoder) ให้ได้ประโยคที่ตรงที่สุด | GPU |
+| **5** | Gemini Generation | สร้างคำตอบ SSE streaming จากเนื้อหาที่ถูกบีบอัดแล้ว | Cloud API |
 | **A1** | Query Decomposer | 🧠 แตกคำถามซับซ้อนเป็น sub-queries (Agentic) | Cloud API |
 | **A2** | Evaluator | 📊 ประเมินว่าข้อมูลครบหรือยัง + สร้าง follow-up (Agentic) | Cloud API |
 | **A3** | Balanced Selection | ⚖️ round-robin เลือก chunks จากทุก source (Agentic) | CPU |
@@ -90,6 +92,7 @@ BookMind/
 │   │   ├── tokenizer.py    #     Thai/English text tokenization
 │   │   ├── reranker.py     #     Cross-Encoder Reranking logic
 │   │   ├── base_search.py  #     Dense/BM25 low-level search
+│   │   ├── compressor.py   #     ✂️ Sentence-Level Context Compressor
 │   │   └── pipeline.py     #     Retrieval Pipeline orchestrator
 │   │
 │   ├── agentic/            #   🧠 Agentic Reasoning Engine
@@ -229,6 +232,12 @@ TOP_K_RETRIEVAL = 10    # FAISS candidates
 TOP_K_DISPLAY   = 5     # Final results shown
 ENABLE_HYDE     = True  # HyDE query transform on/off
 
+# Sentence Compression
+COMPRESSION_ENABLED = True
+COMPRESSION_EMBEDDING_THRESHOLD = 0.45  
+COMPRESSION_TOP_N_SIMPLE = 5            
+COMPRESSION_TOP_N_COMPLEX = 12          
+
 # 🧠 Agentic RAG
 AGENTIC_MAX_ITERATIONS = 3        # Max search loop iterations
 AGENTIC_SUFFICIENCY_THRESHOLD = 0.7  # Stop searching when confidence ≥ 0.7
@@ -299,6 +308,7 @@ GROQ_TEMPERATURE=0.7
 - [x] ⚖️ Balanced Chunk Selection — round-robin จากทุก source
 - [x] 🎭 Persona Management — ระบบสลับบทบาท (ครู, นักกฎหมาย, นักบัญชี ฯลฯ)
 - [x] 🎛️ Interactive Pill Toggles — สวิตช์เปิด/ปิด HyDE และ Agentic แบบใหม่ พร้อมเงื่อนไขการทำงานร่วมกัน
+- [x] ✂️ Sentence-Level Context Compression — ลดขนาด context แต่รักษาความถูกต้อง
 - [ ] Conversation Memory (multi-turn)
 - [ ] Document Upload (PDF/TXT via Web UI)
 - [ ] Multi-Agent System (specialized agents per domain)

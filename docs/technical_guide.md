@@ -1,9 +1,9 @@
 # 📘 เอกสารอธิบายระบบ RAG อย่างละเอียด
-# RAG System — Technical Documentation (v3.5)
+# RAG System — Technical Documentation (v4.0)
 **Developed by [Aetox.dev](https://aetox.dev)**
 
 > เอกสารฉบับนี้อธิบายการทำงานของระบบ RAG (Retrieval-Augmented Generation) **แบบ End-to-End** ทุกขั้นตอน
-> ครอบคลุมตั้งแต่ Query Transform (HyDE), Hybrid Search, Adaptive Reranking, LLM Generation (Gemini), **🧠 Agentic RAG** (Query Decomposition + Multi-hop Retrieval), จนถึง Web UI
+> ครอบคลุมตั้งแต่ Query Transform (HyDE), Hybrid Search, Adaptive Reranking, **✂️ Sentence-Level Context Compression**, LLM Generation (Gemini), **🧠 Agentic RAG** (Query Decomposition + Multi-hop Retrieval), จนถึง Web UI
 
 ---
 
@@ -41,9 +41,9 @@
 1. **Retrieval (ค้นหา):** ค้นหาข้อมูลที่เกี่ยวข้องจากฐานความรู้
 2. **Generation (สร้างคำตอบ):** ส่งข้อมูลที่ค้นเจอให้ LLM สรุปเป็นคำตอบ
 
-> ✅ **ระบบปัจจุบัน** ครบทั้ง Retrieval + Generation + Agentic RAG (v3.0)
-> Classic: HyDE → Hybrid Search → Adaptive Reranking → Gemini Generation → Web UI
-> 🧠 Agentic: Decompose → Multi-hop Search → Evaluate → Balanced Select → Generate
+> ✅ **ระบบปัจจุบัน** ครบทั้ง Retrieval + Compression + Generation + Agentic RAG (v4.0)
+> Classic: HyDE → Hybrid Search → Adaptive Reranking → Sentence Compression → Gemini Generation → Web UI
+> 🧠 Agentic: Decompose → Multi-hop Search → Evaluate → Balanced Select → Compress → Generate
 
 ### ทำไมต้อง RAG?
 
@@ -633,12 +633,18 @@ User: "Atomic Habits สอนวิธีสร้างนิสัยอย�
 │  If Reranking: 10 pairs → bge-reranker-v2-m3.predict()
 │  ⏱️ ~0ms (skip) or ~300ms (rerank)
 │
+▼ Stage 4: Sentence Compression (NEW v4.0)
+│  นำ chunk ที่ได้มาแยกเป็นประโยคย่อย
+│  กรองหยาบด้วย Embedding (Threshold 0.45)
+│  จัดเรียงละเอียดด้วย Reranker
+│  เลือก Top-N (5 สำหรับ Simple, 12 สำหรับ Complex)
+│
 ▼ Output
 │  [1] (Score: 0.99) [Atomic Habits] สรุป: กุญแจสู่การเปลี่ยนแปลง...
 │  [2] (Score: 0.98) [Atomic Habits] เกริ่นนำ: พลังของนิสัยอะตอม...
 │  ...
 │
-⏱️ Total: ~15ms (clear) or ~300-500ms (ambiguous)
+⏱️ Total: ~60-150ms (clear) or ~400-600ms (ambiguous)
 ```
 
 ---
@@ -666,7 +672,8 @@ BookMind/
 │   ├── retrieval/          🔍 Retrieval Pipeline: แยกขั้นตอน Search ออกเป็นโมดูลย่อย
 │   │   ├── tokenizer.py    ตัดคำไทย/อังกฤษ (Centralized Tokenizer)
 │   │   ├── reranker.py     จัดอันดับซ้ำด้วย Cross-Encoder
-│   │   └── pipeline.py     ควบคุมลำดับการค้นหา (Dense + BM25 + Rerank)
+│   │   ├── compressor.py   ✂️ Sentence Compressor
+│   │   └── pipeline.py     ควบคุมลำดับการค้นหา (Dense + BM25 + Rerank + Compress)
 │   │
 │   ├── agentic/            🧠 Agentic Engine: ระบบคิดวิเคราะห์และ Multi-hop search
 │   │   ├── engine.py       Core logic สำหรับการแตกคำถามและประเมินผล
