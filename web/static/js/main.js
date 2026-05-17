@@ -45,6 +45,40 @@ document.addEventListener('DOMContentLoaded', async () => {
             UI.elements.queryInput.style.height = Math.min(UI.elements.queryInput.scrollHeight, 150) + 'px';
         });
     }
+    
+    // Settings Button
+    const railSettingsBtn = document.getElementById('railSettingsBtn');
+    if (railSettingsBtn) {
+        railSettingsBtn.addEventListener('click', () => {
+            window.location.href = '/settings';
+        });
+    }
+    
+    // HyDE and Agentic Dependency
+    const hydeToggle = document.getElementById('hydeToggle');
+    const agenticToggle = document.getElementById('agenticToggle');
+    if (hydeToggle && agenticToggle) {
+        hydeToggle.addEventListener('change', () => {
+            if (!hydeToggle.checked) {
+                agenticToggle.checked = false;
+                agenticToggle.disabled = true;
+                agenticToggle.closest('.pill-toggle').style.opacity = '0.5';
+                agenticToggle.closest('.pill-toggle').style.pointerEvents = 'none';
+            } else {
+                agenticToggle.disabled = false;
+                agenticToggle.closest('.pill-toggle').style.opacity = '1';
+                agenticToggle.closest('.pill-toggle').style.pointerEvents = 'auto';
+            }
+        });
+        
+        // Initial check
+        if (!hydeToggle.checked) {
+            agenticToggle.checked = false;
+            agenticToggle.disabled = true;
+            agenticToggle.closest('.pill-toggle').style.opacity = '0.5';
+            agenticToggle.closest('.pill-toggle').style.pointerEvents = 'none';
+        }
+    }
 
     if (UI.elements.newChatBtn) {
         UI.elements.newChatBtn.addEventListener('click', () => {
