@@ -156,59 +156,49 @@
 
 .input-footer {
     max-width: 800px;
-    margin: 8px auto 0;
+    margin: 12px auto 0;
     display: flex;
-    justify-content: center;
-    gap: 20px;
+    justify-content: flex-start;
+    gap: 16px;
 }
 
-.toggle-control {
-    display: flex;
+.pill-toggle {
+    display: inline-flex;
     align-items: center;
-    gap: 8px;
-    font-size: 13px;
-    color: var(--text-muted);
     cursor: pointer;
-    padding: 6px 12px;
-    border-radius: 12px;
-    transition: var(--transition);
 }
 
-.toggle-control:hover {
+.pill-toggle input {
+    display: none; /* Hide real checkbox */
+}
+
+.pill-toggle .pill-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 14px;
+    border-radius: 20px;
     background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    color: var(--text-muted);
+    font-size: 13px;
+    transition: all 0.2s ease;
+}
+
+.pill-toggle .pill-btn:hover {
+    background: rgba(255, 255, 255, 0.08);
     color: var(--text-main);
 }
 
-.toggle-control input {
-    appearance: none;
-    width: 32px;
-    height: 16px;
-    background: #333;
-    border-radius: 10px;
-    position: relative;
-    cursor: pointer;
-    transition: var(--transition);
+.pill-toggle input:checked + .pill-btn {
+    background: rgba(59, 130, 246, 0.05); /* Blue tint */
+    border-color: #3b82f6; /* Blue border */
+    color: #3b82f6;
+    box-shadow: 0 0 8px rgba(59, 130, 246, 0.2); /* Glow */
 }
 
-.toggle-control input::before {
-    content: '';
-    position: absolute;
-    width: 12px;
-    height: 12px;
-    background: #666;
-    border-radius: 50%;
-    top: 2px;
-    left: 2px;
-    transition: var(--transition);
-}
-
-.toggle-control input:checked {
-    background: var(--accent-dim);
-}
-
-.toggle-control input:checked::before {
-    transform: translateX(16px);
-    background: var(--accent);
+.pill-toggle input:checked + .pill-btn i {
+    color: #3b82f6;
 }
 
 /* ── Citations & Highlights ── */
