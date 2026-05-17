@@ -24,7 +24,8 @@ export const UI = {
         closeSettings: document.getElementById('closeSettings'),
         saveSettings: document.getElementById('saveSettings'),
         hydeModelSelect: document.getElementById('hydeModelSelect'),
-        genModelSelect: document.getElementById('genModelSelect')
+        genModelSelect: document.getElementById('genModelSelect'),
+        webSearchBtn: document.getElementById('webSearchBtn')
     },
 
     init() {
@@ -55,6 +56,16 @@ export const UI = {
         if (this.elements.closeSettings) {
             this.elements.closeSettings.addEventListener('click', () => this.hideSettings());
         }
+        
+        if (this.elements.webSearchBtn) {
+            this.elements.webSearchBtn.addEventListener('click', () => {
+                this.elements.webSearchBtn.classList.toggle('active');
+            });
+        }
+    },
+
+    isWebSearchActive() {
+        return this.elements.webSearchBtn && this.elements.webSearchBtn.classList.contains('active');
     },
 
     showSettings() {

@@ -213,6 +213,7 @@ async function handleSend() {
         const response = await API.ask({
             query,
             use_hyde: UI.elements.hydeToggle ? UI.elements.hydeToggle.checked : false,
+            use_web_search: UI.isWebSearchActive(),
             mode: isAgentic ? 'agentic' : 'classic',
             chat_id: currentChatId,
             persona_id: currentPersonaId,

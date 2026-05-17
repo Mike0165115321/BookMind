@@ -137,6 +137,13 @@
     color: var(--text-main);
 }
 
+.input-action-btn.active {
+    background: rgba(59, 130, 246, 0.15); /* Blue tint */
+    border: 1px solid #3b82f6 !important; /* Blue border */
+    color: #3b82f6 !important;
+    box-shadow: 0 0 8px rgba(59, 130, 246, 0.3); /* Glow */
+}
+
 .input-right-actions {
     display: flex;
     align-items: center;

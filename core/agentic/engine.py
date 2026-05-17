@@ -36,10 +36,12 @@ class AgenticEngine:
         hyde_model: str = None,
         agentic_provider: str = None,
         agentic_model: str = None,
-        persona_id: str = "default"
+        persona_id: str = "default",
+        use_web_search: bool = False
     ):
         self.searcher = searcher
         self.use_hyde = use_hyde
+        self.use_web_search = use_web_search
         self.max_iterations = max_iterations
         self.max_chunks = max_chunks
         self.sufficiency_threshold = sufficiency_threshold
@@ -95,8 +97,13 @@ class AgenticEngine:
                     }
                 )
 
-                # Agentic loop uses raw sub-queries for retrieval (No HyDE to save cost/time)
-                results = self.searcher.search(sq, top_k=config.TOP_K_RETRIEVAL, context_budget=decomp.context_budget)
+                if self.use_web_search:
+                    from core.web_searcher import WebSearcher
+                    results = WebSearcher.search(sq, 5)
+                else:
+                    # Agentic loop uses raw sub-queries for retrieval (No HyDE to save cost/time)
+                    results = self.searcher.search(sq, top_k=config.TOP_K_RETRIEVAL, context_budget=decomp.context_budget)
+                    
                 new_count = memory.add_search_results(sq, results, iteration)
 
                 iter_record = {

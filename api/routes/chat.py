@@ -1,7 +1,9 @@
 """
 Chat Routes — Endpoints for RAG Chat.
 """
+# pyrefly: ignore [missing-import]
 from fastapi import APIRouter, Request, File, UploadFile
+# pyrefly: ignore [missing-import]
 from sse_starlette.sse import EventSourceResponse
 from api.sse_handlers import classic_event_generator, agentic_event_generator
 import os
@@ -41,6 +43,7 @@ async def ask_endpoint(request: Request):
     persona_id = body.get("persona_id")
     temp_file_path = body.get("temp_file_path")
     temp_file_name = body.get("temp_file_name")
+    use_web_search = body.get("use_web_search", False)
     
     from core.database import db
     if not persona_id:
@@ -54,9 +57,9 @@ async def ask_endpoint(request: Request):
         return {"error": "กรุณาพิมพ์คำถาม"}
 
     if mode == "agentic":
-        return EventSourceResponse(agentic_event_generator(query, use_hyde, provider, model, chat_id, persona_id, temp_file_path, temp_file_name))
+        return EventSourceResponse(agentic_event_generator(query, use_hyde, provider, model, chat_id, persona_id, temp_file_path, temp_file_name, use_web_search))
     else:
-        return EventSourceResponse(classic_event_generator(query, use_hyde, provider, model, chat_id, persona_id, temp_file_path, temp_file_name))
+        return EventSourceResponse(classic_event_generator(query, use_hyde, provider, model, chat_id, persona_id, temp_file_path, temp_file_name, use_web_search))
 
 @router.get("/chats")
 async def list_chats():

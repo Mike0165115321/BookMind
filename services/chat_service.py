@@ -22,7 +22,7 @@ class ChatService:
     def get_searcher(self):
         return self.searcher
 
-    async def run_classic_pipeline(self, query: str, use_hyde: bool = True, provider: str = "gemini", model_name: str = None, persona_id: str = "default", temp_file_path: str = None, temp_file_name: str = None):
+    async def run_classic_pipeline(self, query: str, use_hyde: bool = True, provider: str = "gemini", model_name: str = None, persona_id: str = "default", temp_file_path: str = None, temp_file_name: str = None, use_web_search: bool = False):
         """
         Executes the classic RAG pipeline.
         Yields status updates and final results (non-SSE).
@@ -50,7 +50,13 @@ class ChatService:
         search_time = 0
         temp_file_content = None
         
-        if temp_file_path:
+        if use_web_search:
+            yield {"type": "status", "stage": "search", "message": "🌐 กำลังค้นหาบนเว็บ..."}
+            from core.web_searcher import WebSearcher
+            t_web = time.time()
+            results = await asyncio.to_thread(WebSearcher.search, query, 5)
+            search_time = time.time() - t_web
+        elif temp_file_path:
             yield {"type": "status", "stage": "search", "message": "📄 กำลังอ่านไฟล์แนบ..."}
             from core.document_loader import DocumentLoader
             import os
@@ -99,7 +105,7 @@ class ChatService:
             "total_time": round(total_time, 2),
         }
 
-    async def run_agentic_pipeline(self, query: str, use_hyde: bool = True, provider: str = "gemini", model_name: str = None, persona_id: str = "default", temp_file_path: str = None, temp_file_name: str = None):
+    async def run_agentic_pipeline(self, query: str, use_hyde: bool = True, provider: str = "gemini", model_name: str = None, persona_id: str = "default", temp_file_path: str = None, temp_file_name: str = None, use_web_search: bool = False):
         """
         Executes the agentic RAG pipeline.
         """
@@ -130,7 +136,8 @@ class ChatService:
             hyde_model=h_m,
             agentic_provider=a_p,
             agentic_model=a_m,
-            persona_id=persona_id
+            persona_id=persona_id,
+            use_web_search=use_web_search
         )
         
         # We start with an initial status
