@@ -10,9 +10,9 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <!-- CSS Modules -->
-    <link rel="stylesheet" href="/static/css/base.css?v=3">
-    <link rel="stylesheet" href="/static/css/layout.css?v=3">
-    <link rel="stylesheet" href="/static/css/admin.css?v=3">
+    <link rel="stylesheet" href="/static/css/base.css?v=4">
+    <link rel="stylesheet" href="/static/css/layout.css?v=4">
+    <link rel="stylesheet" href="/static/css/admin.css?v=4">
 </head>
 <body class="theme-dark">
     <div class="app-wrapper">
@@ -89,62 +89,103 @@
                             </tbody>
                         </table>
                     </div>
+                    <div id="pagination" class="pagination"></div>
                 </div>
             </div>
         </main>
-    </div>                        <th>สถานะ</th>
-                            <th>Chunks</th>
-                            <th>จัดการ</th>
-                        </tr>
-                    </thead>
-                    <tbody id="docTableBody">
-                        <!-- Documents will load here -->
-                    </tbody>
-                </table>
-            </div>
-        </div>
     </div>
 
     <script>
+        let allDocuments = [];
+        let currentPage = 1;
+        const pageSize = 10;
+
         async function loadDocuments() {
             try {
                 const response = await fetch('/api/documents');
                 const data = await response.json();
-                const docTableBody = document.getElementById('docTableBody');
-                docTableBody.innerHTML = '';
-                
-                data.documents.forEach(doc => {
-                    const row = document.createElement('tr');
-                    const statusClass = `status-${doc.status.toLowerCase()}`;
-                    const isError = doc.status === 'ERROR';
-                    const isProcessing = doc.status === 'PROCESSING';
-
-                    row.innerHTML = `
-                        <td><i class="far fa-file-alt" style="margin-right:8px; color:#6366f1"></i> ${doc.filename}</td>
-                        <td>${doc.book_title || '-'}</td>
-                        <td><span class="badge">${doc.category || 'General'}</span></td>
-                        <td>
-                            <span class="status-pill ${statusClass} ${isProcessing ? 'animate-pulse' : ''}">
-                                <i class="fas ${getStatusIcon(doc.status)}"></i> ${doc.status}
-                            </span>
-                        </td>
-                        <td style="font-weight:600; color:#a855f7">${doc.total_chunks || 0}</td>
-                        <td class="actions">
-                            ${isError ? `
-                                <button class="action-btn btn-retry" onclick="retryDoc(${doc.id})" title="ลองใหม่">
-                                    <i class="fas fa-sync-alt"></i>
-                                </button>
-                            ` : ''}
-                            <button class="action-btn btn-delete" onclick="deleteDoc(${doc.id})" title="ลบ">
-                                <i class="fas fa-trash-alt"></i>
-                            </button>
-                        </td>
-                    `;
-                    docTableBody.appendChild(row);
-                });
+                allDocuments = (data.documents || []).reverse();
+                renderTable();
             } catch (err) {
                 console.error('Failed to load documents:', err);
             }
+        }
+
+        function renderTable() {
+            const docTableBody = document.getElementById('docTableBody');
+            docTableBody.innerHTML = '';
+            
+            const start = (currentPage - 1) * pageSize;
+            const end = start + pageSize;
+            const pageDocs = allDocuments.slice(start, end);
+            
+            pageDocs.forEach(doc => {
+                const row = document.createElement('tr');
+                const statusClass = `status-${doc.status.toLowerCase()}`;
+                const isError = doc.status === 'ERROR';
+                const isProcessing = doc.status === 'PROCESSING';
+
+                row.innerHTML = `
+                    <td><i class="far fa-file-alt" style="margin-right:8px; color:#6366f1"></i> ${doc.filename}</td>
+                    <td>${doc.book_title || '-'}</td>
+                    <td><span class="badge">${doc.category || 'General'}</span></td>
+                    <td>
+                        <span class="status-pill ${statusClass} ${isProcessing ? 'animate-pulse' : ''}">
+                            <i class="fas ${getStatusIcon(doc.status)}"></i> ${doc.status}
+                        </span>
+                    </td>
+                    <td style="font-weight:600; color:#a855f7">${doc.total_chunks || 0}</td>
+                    <td class="actions">
+                        ${isError ? `
+                            <button class="action-btn btn-retry" onclick="retryDoc(${doc.id})" title="ลองใหม่">
+                                <i class="fas fa-sync-alt"></i>
+                            </button>
+                        ` : ''}
+                        <button class="action-btn btn-delete" onclick="deleteDoc(${doc.id})" title="ลบ">
+                            <i class="fas fa-trash-alt"></i>
+                        </button>
+                    </td>
+                `;
+                docTableBody.appendChild(row);
+            });
+            
+            renderPagination();
+        }
+
+        function renderPagination() {
+            const paginationEl = document.getElementById('pagination');
+            if (!paginationEl) return;
+            paginationEl.innerHTML = '';
+            
+            const totalPages = Math.ceil(allDocuments.length / pageSize);
+            if (totalPages <= 1) return;
+            
+            const info = document.createElement('span');
+            info.className = 'pagination-info';
+            info.innerHTML = `หน้า ${currentPage} จาก ${totalPages} (ทั้งหมด ${allDocuments.length} รายการ) &nbsp;&nbsp;`;
+            paginationEl.appendChild(info);
+            
+            const prevBtn = document.createElement('button');
+            prevBtn.className = 'pagination-btn';
+            prevBtn.innerHTML = '<i class="fas fa-chevron-left"></i> ก่อนหน้า';
+            prevBtn.disabled = currentPage === 1;
+            prevBtn.onclick = () => { currentPage--; renderTable(); };
+            paginationEl.appendChild(prevBtn);
+            
+            for (let i = 1; i <= totalPages; i++) {
+                const btn = document.createElement('button');
+                btn.className = `pagination-btn ${i === currentPage ? 'active' : ''}`;
+                btn.textContent = i;
+                btn.onclick = () => { currentPage = i; renderTable(); };
+                paginationEl.appendChild(btn);
+            }
+            
+            const nextBtn = document.createElement('button');
+            nextBtn.className = 'pagination-btn';
+            nextBtn.innerHTML = 'ถัดไป <i class="fas fa-chevron-right"></i>';
+            nextBtn.disabled = currentPage === totalPages;
+            nextBtn.onclick = () => { currentPage++; renderTable(); };
+            paginationEl.appendChild(nextBtn);
         }
 
         function getStatusIcon(status) {

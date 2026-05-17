@@ -6,11 +6,28 @@ import { UI } from './ui.js';
 import { Chat } from './chat.js';
 
 let currentChatId = null;
+let currentPersonaId = 'general_assistant';
 
 document.addEventListener('DOMContentLoaded', async () => {
     // 1. Initial Load
     UI.init();
     loadHistory();
+    loadPersonasForMenu();
+
+    // Toggle Persona Menu
+    const menuBtn = document.getElementById('personaMenuBtn');
+    const menuEl = document.getElementById('personaFloatingMenu');
+    if (menuBtn && menuEl) {
+        menuBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const isVisible = menuEl.style.display === 'block';
+            menuEl.style.display = isVisible ? 'none' : 'block';
+        });
+        
+        document.addEventListener('click', () => {
+            menuEl.style.display = 'none';
+        });
+    }
 
     // 2. Setup Event Listeners
     if (UI.elements.sendBtn) UI.elements.sendBtn.addEventListener('click', handleSend);
@@ -158,7 +175,8 @@ async function handleSend() {
             query,
             use_hyde: UI.elements.hydeToggle ? UI.elements.hydeToggle.checked : false,
             mode: isAgentic ? 'agentic' : 'classic',
-            chat_id: currentChatId
+            chat_id: currentChatId,
+            persona_id: currentPersonaId
         });
 
         await Chat.handleStream(
@@ -206,5 +224,49 @@ function renderModelOptions(data, targetProvider = null) {
             group.appendChild(opt);
         });
         selector.appendChild(group);
+    }
+}
+
+async function loadPersonasForMenu() {
+    const menuEl = document.getElementById('personaFloatingMenu');
+    if (!menuEl) return;
+    
+    try {
+        const data = await API.fetchPersonas();
+        const personas = data.personas || {};
+        
+        menuEl.innerHTML = '';
+        
+        Object.keys(personas).forEach(id => {
+            const p = personas[id];
+            const item = document.createElement('div');
+            item.style.padding = '8px 12px';
+            item.style.cursor = 'pointer';
+            item.style.fontSize = '12px';
+            item.style.color = 'var(--text-main)';
+            item.style.borderRadius = '4px';
+            item.style.display = 'flex';
+            item.style.alignItems = 'center';
+            item.style.gap = '8px';
+            
+            item.addEventListener('mouseenter', () => item.style.background = 'rgba(255,255,255,0.05)');
+            item.addEventListener('mouseleave', () => item.style.background = 'transparent');
+            
+            item.innerHTML = `
+                <i class="${p.meta.icon || 'fas fa-robot'}" style="color: ${p.meta.color || 'var(--blue-primary)'}; width: 14px;"></i>
+                <span>${p.meta.label}</span>
+            `;
+            
+            item.addEventListener('click', () => {
+                currentPersonaId = id;
+                const labelEl = document.getElementById('currentPersonaLabel');
+                if (labelEl) labelEl.textContent = `บทบาท: ${p.meta.label}`;
+                menuEl.style.display = 'none';
+            });
+            
+            menuEl.appendChild(item);
+        });
+    } catch (err) {
+        console.error("Failed to load personas for menu:", err);
     }
 }

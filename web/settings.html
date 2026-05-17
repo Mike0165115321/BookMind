@@ -13,6 +13,9 @@
     <link rel="stylesheet" href="/static/css/base.css">
     <link rel="stylesheet" href="/static/css/layout.css">
     <style>
+        body {
+            overflow-y: auto !important;
+        }
         .settings-container {
             max-width: 800px;
             margin: 40px auto;
@@ -183,6 +186,23 @@
                     </div>
                 </div>
 
+                <!-- Persona Details Display -->
+                <div id="personaDetails" style="margin-top: 15px; padding: 15px; background: rgba(255,255,255,0.05); border-radius: var(--radius-md); border: 1px solid var(--border);">
+                    <h4 id="pdLabel" style="margin: 0 0 5px 0; color: var(--accent);"></h4>
+                    <p id="pdDesc" style="margin: 0 0 10px 0; font-size: 13px; color: var(--text-muted);"></p>
+                    
+                    <div style="display: flex; gap: 20px; font-size: 12px; color: var(--text-muted); margin-bottom: 12px; background: rgba(0,0,0,0.1); padding: 8px; border-radius: 6px;">
+                        <span><i class="fas fa-comment-dots" style="color: var(--accent-dim);"></i> Tone: <span id="pdTone" style="color: var(--text-main); font-weight: 500;"></span></span>
+                        <span><i class="fas fa-globe" style="color: var(--accent-dim);"></i> Language: <span id="pdLang" style="color: var(--text-main); font-weight: 500;"></span></span>
+                        <span><i class="fas fa-thermometer-half" style="color: var(--accent-dim);"></i> Temp: <span id="pdTemp" style="color: var(--text-main); font-weight: 500;"></span></span>
+                    </div>
+
+                    <div style="font-size: 13px; color: var(--text-main);">
+                        <strong>System Prompt:</strong>
+                        <pre id="pdPrompt" style="white-space: pre-wrap; background: rgba(0,0,0,0.2); padding: 10px; border-radius: 4px; margin-top: 5px; font-family: inherit; font-size: 13px;"></pre>
+                    </div>
+                </div>
+
                 <!-- Add Persona Form (Hidden by default) -->
                 <div id="addPersonaForm" style="display: none; margin-top: 20px; padding: 20px; background: rgba(0,0,0,0.2); border-radius: var(--radius-md); border: 1px solid var(--border);">
                     <h3 style="margin-top: 0; margin-bottom: 16px; font-size: 15px; color: var(--accent-dim);">สร้างบทบาทใหม่</h3>
@@ -190,9 +210,37 @@
                         <label>ชื่อบทบาท (Label)</label>
                         <input type="text" id="newPersonaLabel" class="form-select" placeholder="เช่น ผู้ช่วยนักการตลาด">
                     </div>
+                    <div class="form-row" style="margin-bottom: 12px;">
+                        <div class="form-group">
+                            <label>Tone (น้ำเสียง) - เลือกได้หลายอัน</label>
+                            <div class="tone-selector" style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 4px;">
+                                <button type="button" class="tone-btn" data-tone="polite" style="padding: 6px 10px; background: rgba(255,255,255,0.05); color: var(--text-main); border: 1px solid var(--border); border-radius: 6px; cursor: pointer; font-size: 12px;">สุภาพ</button>
+                                <button type="button" class="tone-btn" data-tone="formal" style="padding: 6px 10px; background: rgba(255,255,255,0.05); color: var(--text-main); border: 1px solid var(--border); border-radius: 6px; cursor: pointer; font-size: 12px;">เป็นทางการ</button>
+                                <button type="button" class="tone-btn" data-tone="friendly" style="padding: 6px 10px; background: rgba(255,255,255,0.05); color: var(--text-main); border: 1px solid var(--border); border-radius: 6px; cursor: pointer; font-size: 12px;">เป็นกันเอง</button>
+                                <button type="button" class="tone-btn" data-tone="concise" style="padding: 6px 10px; background: rgba(255,255,255,0.05); color: var(--text-main); border: 1px solid var(--border); border-radius: 6px; cursor: pointer; font-size: 12px;">กระชับ</button>
+                                <button type="button" class="tone-btn" data-tone="detailed" style="padding: 6px 10px; background: rgba(255,255,255,0.05); color: var(--text-main); border: 1px solid var(--border); border-radius: 6px; cursor: pointer; font-size: 12px;">ละเอียด</button>
+                                <button type="button" class="tone-btn" data-tone="humorous" style="padding: 6px 10px; background: rgba(255,255,255,0.05); color: var(--text-main); border: 1px solid var(--border); border-radius: 6px; cursor: pointer; font-size: 12px;">สนุกสนาน</button>
+                                <button type="button" class="tone-btn" data-tone="serious" style="padding: 6px 10px; background: rgba(255,255,255,0.05); color: var(--text-main); border: 1px solid var(--border); border-radius: 6px; cursor: pointer; font-size: 12px;">จริงจัง</button>
+                                <button type="button" class="tone-btn" data-tone="empathetic" style="padding: 6px 10px; background: rgba(255,255,255,0.05); color: var(--text-main); border: 1px solid var(--border); border-radius: 6px; cursor: pointer; font-size: 12px;">ให้กำลังใจ</button>
+                                <button type="button" class="tone-btn" data-tone="creative" style="padding: 6px 10px; background: rgba(255,255,255,0.05); color: var(--text-main); border: 1px solid var(--border); border-radius: 6px; cursor: pointer; font-size: 12px;">สร้างสรรค์</button>
+                                <button type="button" class="tone-btn active" data-tone="neutral" style="padding: 6px 10px; background: var(--blue-primary); color: white; border: 1px solid var(--blue-primary); border-radius: 6px; cursor: pointer; font-size: 12px;">ทั่วไป</button>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Language (ภาษา)</label>
+                            <div class="lang-selector" style="display: flex; gap: 8px; margin-bottom: 4px;">
+                                <button type="button" class="lang-btn active" data-lang="th" style="padding: 8px 12px; background: var(--blue-primary); color: white; border: 1px solid var(--blue-primary); border-radius: 6px; cursor: pointer;">ไทย</button>
+                                <button type="button" class="lang-btn" data-lang="en" style="padding: 8px 12px; background: rgba(255,255,255,0.05); color: var(--text-main); border: 1px solid var(--border); border-radius: 6px; cursor: pointer;">English</button>
+                                <button type="button" class="lang-btn" data-lang="zh" style="padding: 8px 12px; background: rgba(255,255,255,0.05); color: var(--text-main); border: 1px solid var(--border); border-radius: 6px; cursor: pointer;">中文</button>
+                                <button type="button" class="lang-btn" data-lang="ja" style="padding: 8px 12px; background: rgba(255,255,255,0.05); color: var(--text-main); border: 1px solid var(--border); border-radius: 6px; cursor: pointer;">日本語</button>
+                            </div>
+                            <input type="hidden" id="newPersonaLang" value="th">
+                            <small style="color: var(--accent-dim); font-size: 11px; display: block;">⚠️ ภาษาควรเป็นภาษาเดียวกันทั้งหมดเพื่อประสิทธิภาพสูงสุด</small>
+                        </div>
+                    </div>
                     <div class="form-group" style="margin-bottom: 12px;">
-                        <label>คำอธิบายสั้นๆ</label>
-                        <input type="text" id="newPersonaDesc" class="form-select" placeholder="อธิบายหน้าที่สั้นๆ">
+                        <label>Temperature (ความสร้างสรรค์: 0.0 - 1.0)</label>
+                        <input type="number" id="newPersonaTemp" class="form-select" min="0" max="1" step="0.1" value="0.5">
                     </div>
                     <div class="form-group" style="margin-bottom: 16px;">
                         <label>System Prompt (คำสั่งควบคุมบทบาท)</label>
@@ -217,20 +265,36 @@
         import { API } from '/static/js/api.js';
 
         let allModels = {};
+        let allPersonas = {};
 
         async function loadPersonasUI() {
             const personas = await API.fetchPersonas();
+            allPersonas = personas.personas || {};
             const pSelect = document.getElementById('personaId');
             pSelect.innerHTML = '';
-            const pData = personas.personas || {};
-            for (const [id, p] of Object.entries(pData)) {
+            for (const [id, p] of Object.entries(allPersonas)) {
                 const opt = document.createElement('option');
                 opt.value = id;
                 opt.textContent = p.meta?.label || id;
                 pSelect.appendChild(opt);
             }
+            updatePersonaDetails();
             return personas;
         }
+
+        function updatePersonaDetails() {
+            const id = document.getElementById('personaId').value;
+            const p = allPersonas[id];
+            if (!p) return;
+            
+            document.getElementById('pdLabel').textContent = p.meta?.label || id;
+            document.getElementById('pdDesc').textContent = p.meta?.description || '-';
+            document.getElementById('pdPrompt').textContent = p.prompt?.system_role || '';
+            document.getElementById('pdTone').textContent = p.prompt?.tone || 'N/A';
+            document.getElementById('pdLang').textContent = p.prompt?.language || 'N/A';
+            document.getElementById('pdTemp').textContent = p.model_config?.temperature || 'N/A';
+        }
+        document.getElementById('personaId').addEventListener('change', updatePersonaDetails);
 
         async function init() {
             try {
@@ -344,10 +408,87 @@
             formEl.style.display = 'none';
         });
 
+        // Language Selector Logic
+        document.querySelectorAll('.lang-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.lang-btn').forEach(b => {
+                    b.classList.remove('active');
+                    b.style.background = 'rgba(255,255,255,0.05)';
+                    b.style.borderColor = 'var(--border)';
+                    b.style.color = 'var(--text-main)';
+                });
+                btn.classList.add('active');
+                btn.style.background = 'var(--blue-primary)';
+                btn.style.borderColor = 'var(--blue-primary)';
+                btn.style.color = 'white';
+                document.getElementById('newPersonaLang').value = btn.dataset.lang;
+            });
+        });
+
+        // Tone Selector Logic (Multi-select)
+        document.querySelectorAll('.tone-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const isNeutral = btn.dataset.tone === 'neutral';
+                
+                if (isNeutral) {
+                    // If clicking neutral, deselect all others
+                    document.querySelectorAll('.tone-btn').forEach(b => {
+                        if (b.dataset.tone !== 'neutral') {
+                            b.classList.remove('active');
+                            b.style.background = 'rgba(255,255,255,0.05)';
+                            b.style.borderColor = 'var(--border)';
+                            b.style.color = 'var(--text-main)';
+                        }
+                    });
+                    btn.classList.add('active');
+                    btn.style.background = 'var(--blue-primary)';
+                    btn.style.borderColor = 'var(--blue-primary)';
+                    btn.style.color = 'white';
+                } else {
+                    // If clicking other, deselect neutral
+                    const neutralBtn = document.querySelector('.tone-btn[data-tone="neutral"]');
+                    if (neutralBtn) {
+                        neutralBtn.classList.remove('active');
+                        neutralBtn.style.background = 'rgba(255,255,255,0.05)';
+                        neutralBtn.style.borderColor = 'var(--border)';
+                        neutralBtn.style.color = 'var(--text-main)';
+                    }
+                    
+                    // Toggle this button
+                    const isActive = btn.classList.toggle('active');
+                    if (isActive) {
+                        btn.style.background = 'var(--blue-primary)';
+                        btn.style.borderColor = 'var(--blue-primary)';
+                        btn.style.color = 'white';
+                    } else {
+                        btn.style.background = 'rgba(255,255,255,0.05)';
+                        btn.style.borderColor = 'var(--border)';
+                        btn.style.color = 'var(--text-main)';
+                        
+                        // If nothing is active, activate neutral
+                        const activeBtns = document.querySelectorAll('.tone-btn.active');
+                        if (activeBtns.length === 0 && neutralBtn) {
+                            neutralBtn.classList.add('active');
+                            neutralBtn.style.background = 'var(--blue-primary)';
+                            neutralBtn.style.borderColor = 'var(--blue-primary)';
+                            neutralBtn.style.color = 'white';
+                        }
+                    }
+                }
+            });
+        });
+
         document.getElementById('saveNewPersonaBtn').addEventListener('click', async () => {
             const label = document.getElementById('newPersonaLabel').value.trim();
-            const desc = document.getElementById('newPersonaDesc').value.trim();
             const prompt = document.getElementById('newPersonaPrompt').value.trim();
+            
+            // Collect multi-select tones
+            const tones = [];
+            document.querySelectorAll('.tone-btn.active').forEach(b => tones.push(b.dataset.tone));
+            const tone = tones.join(',') || 'neutral';
+            
+            const language = document.getElementById('newPersonaLang').value;
+            const temperature = parseFloat(document.getElementById('newPersonaTemp').value) || 0.5;
 
             if (!label || !prompt) {
                 alert("กรุณากรอกชื่อบทบาทและ System Prompt");
@@ -357,8 +498,11 @@
             try {
                 const res = await API.createPersona({
                     label: label,
-                    description: desc,
-                    system_role: prompt
+                    description: label, // Use label as description to avoid asking user
+                    system_role: prompt,
+                    tone: tone,
+                    language: language,
+                    temperature: temperature
                 });
                 
                 if (res.status === 'created') {
@@ -366,10 +510,43 @@
                     await loadPersonasUI();
                     // Select new
                     document.getElementById('personaId').value = res.id;
+                    updatePersonaDetails();
                     // Reset and hide form
                     document.getElementById('newPersonaLabel').value = '';
-                    document.getElementById('newPersonaDesc').value = '';
                     document.getElementById('newPersonaPrompt').value = '';
+                    document.getElementById('newPersonaLang').value = 'th';
+                    document.getElementById('newPersonaTemp').value = '0.5';
+                    
+                    // Reset UI buttons for tone
+                    document.querySelectorAll('.tone-btn').forEach(b => {
+                        b.classList.remove('active');
+                        b.style.background = 'rgba(255,255,255,0.05)';
+                        b.style.borderColor = 'var(--border)';
+                        b.style.color = 'var(--text-main)';
+                    });
+                    const defToneBtn = document.querySelector('.tone-btn[data-tone="neutral"]');
+                    if (defToneBtn) {
+                        defToneBtn.classList.add('active');
+                        defToneBtn.style.background = 'var(--blue-primary)';
+                        defToneBtn.style.borderColor = 'var(--blue-primary)';
+                        defToneBtn.style.color = 'white';
+                    }
+                    
+                    // Reset UI buttons for language
+                    document.querySelectorAll('.lang-btn').forEach(b => {
+                        b.classList.remove('active');
+                        b.style.background = 'rgba(255,255,255,0.05)';
+                        b.style.borderColor = 'var(--border)';
+                        b.style.color = 'var(--text-main)';
+                    });
+                    const defBtn = document.querySelector('.lang-btn[data-lang="th"]');
+                    if (defBtn) {
+                        defBtn.classList.add('active');
+                        defBtn.style.background = 'var(--blue-primary)';
+                        defBtn.style.borderColor = 'var(--blue-primary)';
+                        defBtn.style.color = 'white';
+                    }
+
                     formEl.style.display = 'none';
                     alert("✅ สร้างบทบาทใหม่เรียบร้อย อย่าลืมกดบันทึกการตั้งค่าด้านล่างด้วยนะครับ");
                 }

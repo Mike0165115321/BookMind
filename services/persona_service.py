@@ -5,7 +5,8 @@ import config
 class PersonaService:
     def __init__(self, config_path: str = None):
         if not config_path:
-            config_path = os.path.join(config.DATA_DIR, "personas.json")
+            base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+            config_path = os.path.join(base_dir, "core", "prompts", "personas.json")
         self.config_path = config_path
         self.registry = self._load_personas()
         
@@ -21,6 +22,7 @@ class PersonaService:
                 
     def get_persona(self, persona_id: str) -> dict:
         """Get persona config by ID or return default."""
+        self.registry = self._load_personas() # Reload from disk to catch manual edits
         personas = self.registry.get("personas", {})
         
         # Fallback to default if not found
@@ -36,12 +38,13 @@ class PersonaService:
 
     def get_all_personas(self) -> dict:
         """Get all available personas for UI."""
+        self.registry = self._load_personas() # Reload from disk to catch manual edits
         return {
             "default": self.registry.get("default", "general_assistant"),
             "personas": self.registry.get("personas", {})
         }
 
-    def add_persona(self, label: str, description: str, system_role: str) -> str:
+    def add_persona(self, label: str, description: str, system_role: str, tone: str = "neutral", language: str = "th", temperature: float = 0.5) -> str:
         """Add a custom persona and save it to the registry."""
         import time
         persona_id = f"custom_{int(time.time())}"
@@ -59,10 +62,12 @@ class PersonaService:
             },
             "prompt": {
                 "system_role": system_role,
-                "tone": "neutral",
-                "language": "th"
+                "tone": tone,
+                "language": language
             },
-            "model_config": {}
+            "model_config": {
+                "temperature": temperature
+            }
         }
         
         # Save to file

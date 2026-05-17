@@ -93,6 +93,7 @@
 .admin-table {
     width: 100%;
     border-collapse: collapse;
+    table-layout: fixed;
 }
 
 .admin-table th {
@@ -108,7 +109,18 @@
     padding: 16px;
     border-bottom: 1px solid rgba(255, 255, 255, 0.03);
     font-size: 14px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
+
+/* Set specific widths for columns to prevent shifting */
+.admin-table th:nth-child(1), .admin-table td:nth-child(1) { width: 35%; } /* Filename */
+.admin-table th:nth-child(2), .admin-table td:nth-child(2) { width: 20%; } /* Book Title */
+.admin-table th:nth-child(3), .admin-table td:nth-child(3) { width: 15%; } /* Category */
+.admin-table th:nth-child(4), .admin-table td:nth-child(4) { width: 15%; } /* Status */
+.admin-table th:nth-child(5), .admin-table td:nth-child(5) { width: 5%; }  /* Chunks */
+.admin-table th:nth-child(6), .admin-table td:nth-child(6) { width: 10%; } /* Actions */
 
 .admin-table tr:hover td {
     background: rgba(255, 255, 255, 0.02);
@@ -161,4 +173,46 @@
 .btn-submit:disabled {
     opacity: 0.5;
     cursor: not-allowed;
+}
+
+/* Pagination */
+.pagination {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 8px;
+    margin-top: 20px;
+}
+
+.pagination-btn {
+    background: var(--bg-input);
+    border: 1px solid var(--border);
+    color: var(--text-main);
+    padding: 8px 12px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 13px;
+    transition: var(--transition);
+}
+
+.pagination-btn:hover:not(:disabled) {
+    background: var(--border);
+    color: var(--blue-light);
+}
+
+.pagination-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.pagination-btn.active {
+    background: var(--blue-primary);
+    color: white;
+    border-color: var(--blue-primary);
+}
+
+.pagination-info {
+    color: var(--text-muted);
+    font-size: 13px;
+    margin-right: 8px;
 }

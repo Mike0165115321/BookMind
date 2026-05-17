@@ -42,13 +42,48 @@ def generate(
     # 1. Load system prompt from persona service or registry
     from services.persona_service import persona_service
     p_config = persona_service.get_persona(persona_id)
-    system_prompt = p_config.get("prompt", {}).get("system_role")
+    persona_prompt = p_config.get("prompt", {}).get("system_role", "")
     
-    if not system_prompt:
-        system_prompt = registry.get("rag_system")
+    # Base RAG Rules (Mandatory for all personas)
+    base_prompt = """คุณคือผู้ช่วย AI ที่ทำงานร่วมกับระบบ RAG (Retrieval-Augmented Generation) 
+หน้าที่ของคุณคือตอบคำถามของผู้ใช้โดยอ้างอิงจากเอกสารที่แนบมาให้เท่านั้น.
+
+กฎเหล็กที่ต้องปฏิบัติตามอย่างเคร่งครัด:
+1. ห้ามสร้างข้อมูลเอง (Hallucination) หากไม่มีในเอกสารให้ตอบว่า 'ขออภัยครับ ไม่พบข้อมูลในระบบเอกสาร' หรือข้อความทำนองนี้
+2. ให้ใช้หางเสียง 'ครับ' ทุกครั้งที่จบประโยคหรือเมื่อเหมาะสม ห้ามใช้หางเสียง 'ค่ะ' หรือ 'ครับ/ค่ะ' โดยเด็ดขาด
+"""
+    
+    if persona_prompt:
+        system_prompt = f"{base_prompt}\n\nบทบาทและสไตล์การตอบของคุณ:\n{persona_prompt}"
+    else:
+        system_prompt = base_prompt
+        
+    # Append Tone if present
+    tone = p_config.get("prompt", {}).get("tone", "")
+    if tone and tone != "neutral":
+        tone_map = {
+            "polite": "สุภาพ",
+            "formal": "เป็นทางการ",
+            "friendly": "เป็นกันเอง",
+            "concise": "กระชับ",
+            "detailed": "ละเอียด",
+            "humorous": "สนุกสนาน",
+            "serious": "จริงจัง",
+            "empathetic": "ให้กำลังใจ",
+            "creative": "สร้างสรรค์"
+        }
+        active_tones = [tone_map.get(t.strip(), t.strip()) for t in tone.split(",") if t.strip() in tone_map]
+        if active_tones:
+            system_prompt += f"\n\nน้ำเสียงและสไตล์เพิ่มเติมที่ต้องใช้: {', '.join(active_tones)}"
         
     # Apply model config if present
     model_kwargs = p_config.get("model_config", {})
+    
+    # Filter valid keys for GenerationConfig
+    import dataclasses
+    valid_keys = {f.name for f in dataclasses.fields(GenerationConfig)}
+    filtered_kwargs = {k: v for k, v in model_kwargs.items() if k in valid_keys}
+    config = GenerationConfig(**filtered_kwargs) if filtered_kwargs else None
     
     # 2. Build context and user prompt
     context = _build_context(search_results)
@@ -62,6 +97,6 @@ def generate(
     
     # 4. Call llm_manager
     if stream:
-        return llm_manager.generate_stream(provider, messages, model_name=model_name, **model_kwargs)
+        return llm_manager.generate_stream(provider, messages, model_name=model_name, config=config)
     else:
-        return llm_manager.generate(provider, messages, model_name=model_name, **model_kwargs)
+        return llm_manager.generate(provider, messages, model_name=model_name, config=config)

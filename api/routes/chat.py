@@ -87,9 +87,12 @@ async def create_persona(request: Request):
     label = data.get("label", "Custom Persona")
     description = data.get("description", "Custom built persona")
     system_role = data.get("system_role", "")
+    tone = data.get("tone", "neutral")
+    language = data.get("language", "th")
+    temperature = data.get("temperature", 0.5)
     
     if not system_role:
         return {"error": "system_role is required"}
         
-    persona_id = persona_service.add_persona(label, description, system_role)
+    persona_id = persona_service.add_persona(label, description, system_role, tone, language, float(temperature))
     return {"status": "created", "id": persona_id}

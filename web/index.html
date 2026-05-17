@@ -63,7 +63,7 @@
                 <div class="sidebar-footer">
                     <a href="/admin" class="nav-item">
                         <i class="fas fa-rocket"></i>
-                        <span>แผงควบคุม</span>
+                        <span>เพิ่มข้อมูล</span>
                     </a>
                 </div>
             </div>
@@ -107,7 +107,7 @@
                     </div>
                 </div>
                 
-                <div class="input-footer">
+                <div class="input-footer" style="display: flex; align-items: center; gap: 16px;">
                     <label class="toggle-control">
                         <input type="checkbox" id="hydeToggle" checked>
                         <span>🪄 HyDE</span>
@@ -116,6 +116,18 @@
                         <input type="checkbox" id="agenticToggle">
                         <span>🧠 Agentic</span>
                     </label>
+                    
+                    <!-- Persona Floating Menu -->
+                    <div class="dropdown-control" style="position: relative;">
+                        <button id="personaMenuBtn" style="background: rgba(255,255,255,0.05); border: 1px solid var(--border); border-radius: 20px; padding: 4px 12px; color: var(--text-main); font-size: 12px; cursor: pointer; display: flex; align-items: center; gap: 4px;">
+                            <i class="fas fa-user-circle"></i>
+                            <span id="currentPersonaLabel">บทบาท: ทั่วไป</span>
+                            <i class="fas fa-chevron-up" style="font-size: 10px;"></i>
+                        </button>
+                        <div id="personaFloatingMenu" style="display: none; position: absolute; bottom: 130%; left: 0; background: #1a1d24; border: 1px solid var(--border); border-radius: 8px; padding: 6px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); z-index: 100; min-width: 160px;">
+                            <!-- Dynamic items -->
+                        </div>
+                    </div>
                 </div>
             </div>
         </main>
