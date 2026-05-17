@@ -1,10 +1,13 @@
 import os
 import json
+# pyrefly: ignore [missing-import]
 import fitz  # PyMuPDF
 import docx  # python-docx
 import xml.etree.ElementTree as ET
 import pandas as pd
+# pyrefly: ignore [missing-import]
 from pptx import Presentation
+
 from bs4 import BeautifulSoup
 
 class DocumentLoader:
@@ -62,13 +65,38 @@ class DocumentLoader:
     def _format_json_obj(obj, book_title=None):
         b_title = book_title or obj.get("book_title", "")
         title = obj.get("title", "")
-        content = obj.get("content", "")
+        
+        # Build combined content from all fields except metadata keys
+        content_parts = []
+        
+        # Always put main content first if it exists
+        main_content = obj.get("content", "")
+        if main_content:
+            content_parts.append(main_content)
+            
+        # Add other fields
+        for key, value in obj.items():
+            if key in ["book_title", "title", "content", "metadata_prefix"]:
+                continue
+            if not value:
+                continue
+                
+            # Format value based on type
+            if isinstance(value, list):
+                value_str = ", ".join(str(v) for v in value)
+            else:
+                value_str = str(value)
+                
+            label = key.replace("_", " ").capitalize()
+            content_parts.append(f"{label}: {value_str}")
+            
+        combined_content = "\n".join(content_parts)
         
         prefix = ""
         if b_title: prefix += f"[{b_title}] "
         if title: prefix += f"{title}\n"
         
-        return {"content": content, "metadata_prefix": prefix.strip()}
+        return {"content": combined_content, "metadata_prefix": prefix.strip()}
 
     @staticmethod
     def _load_pdf(filepath, book_title=None):
