@@ -34,8 +34,22 @@ class ChatService:
         # 1. HyDE
         search_query = query
         hyde_time = 0
-        if use_hyde and config.ENABLE_HYDE and not temp_file_path: # Skip HyDE if file uploaded
-            from core.database import db
+        
+        from core.database import db
+        enable_web_hyde = db.get_setting("enable_web_hyde")
+        is_web_hyde_enabled = enable_web_hyde in ["true", True, 1, "True", "1"]
+        
+        if use_web_search and is_web_hyde_enabled:
+            w_p = db.get_setting("web_hyde_provider", provider)
+            w_m = db.get_setting("web_hyde_model")
+            
+            yield {"type": "status", "stage": "hyde", "message": f"🪄 กำลังวิเคราะห์คำค้นหาเว็บ ({w_p})..."}
+            t_hyde = time.time()
+            from core.query_transformer import web_hyde_transform
+            search_query = await asyncio.to_thread(web_hyde_transform, query, provider=ProviderName(w_p), model_name=w_m)
+            hyde_time = time.time() - t_hyde
+            yield {"type": "hyde", "hyde_query": search_query[:200], "time": round(hyde_time, 2)}
+        elif use_hyde and config.ENABLE_HYDE and not temp_file_path: # Skip HyDE if file uploaded
             h_p = db.get_setting("hyde_provider", provider)
             h_m = db.get_setting("hyde_model", model_name)
             
@@ -54,7 +68,7 @@ class ChatService:
             yield {"type": "status", "stage": "search", "message": "🌐 กำลังค้นหาบนเว็บ..."}
             from core.web_searcher import WebSearcher
             t_web = time.time()
-            results = await asyncio.to_thread(WebSearcher.search, query, 5)
+            results = await asyncio.to_thread(WebSearcher.search, search_query[:180], 5)
             search_time = time.time() - t_web
         elif temp_file_path:
             yield {"type": "status", "stage": "search", "message": "📄 กำลังอ่านไฟล์แนบ..."}

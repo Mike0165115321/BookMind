@@ -625,3 +625,66 @@ input[type="range"]::-webkit-slider-thumb:hover {
     display: block;
     margin-bottom: 2px;
 }
+
+/* Premium Toggle Switch Style */
+.toggle-control {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.toggle-switch {
+    position: relative;
+    display: inline-block;
+    width: 44px;
+    height: 22px;
+    margin: 0;
+}
+
+.toggle-switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.toggle-slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--border);
+    transition: .3s cubic-bezier(0.4, 0, 0.2, 1);
+    border-radius: 22px;
+}
+
+.toggle-slider:before {
+    position: absolute;
+    content: "";
+    height: 14px;
+    width: 14px;
+    left: 3px;
+    bottom: 3px;
+    background-color: var(--text-muted);
+    transition: .3s cubic-bezier(0.4, 0, 0.2, 1);
+    border-radius: 50%;
+}
+
+.toggle-switch input:checked + .toggle-slider {
+    background-color: rgba(62, 114, 255, 0.15);
+    border-color: var(--blue-primary);
+}
+
+.toggle-switch input:checked + .toggle-slider:before {
+    transform: translateX(22px);
+    background-color: var(--blue-light);
+}
+
+.toggle-label {
+    font-size: 13px;
+    color: var(--text-main);
+    font-weight: 500;
+}
+

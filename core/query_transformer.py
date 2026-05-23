@@ -71,3 +71,36 @@ def rewrite_query(query: str, provider: ProviderName = ProviderName.GROQ, model_
     except Exception as e:
         print(f"   ⚠️ Rewrite failed ({e}), using original query")
         return query
+
+# ──────────────────────────────────────────────
+# Web Search HyDE Settings & Prompts
+# ──────────────────────────────────────────────
+WEB_SEARCH_HYDE_PROMPT = """คุณเป็น AI ที่ช่วยสกัดคำค้นหาที่กระชับและส่งผลลัพธ์สูงสำหรับการค้นหาบนเสิร์ชเอนจิน (Search Engine Optimization)
+หน้าที่ของคุณคือเปลี่ยนคำถามทักทายทั่วไปให้กลายเป็น "ย่อหน้าจำลองสั้นๆ (Hypothetical Web Document) ความยาวไม่เกิน 1-2 ประโยค" ที่น่าจะปรากฏอยู่บนหน้าเว็บเพจหรือข่าวสารเพื่อช่วยจับคู่คีย์เวิร์ด
+- ห้ามเขียนเป็นบทความยาว
+- ห้ามระบุคำทักทาย
+- ห้ามเขียนคำอธิบายเพิ่มเติม
+ตอบกลับด้วยข้อความจำลองสั้นๆ นั้นทันที"""
+
+def web_hyde_transform(query: str, provider: ProviderName = ProviderName.GEMINI, model_name: str = None) -> str:
+    """
+    Web-Specific HyDE: Generate a short hypothetical web document / search-friendly query snippet.
+    """
+    try:
+        messages = [
+            Message(role="system", content=WEB_SEARCH_HYDE_PROMPT),
+            Message(role="user", content=f"คำถาม: {query}")
+        ]
+        
+        # Use lower temperature for speed and precision
+        config = GenerationConfig(temperature=0.3, max_tokens=128)
+        
+        response = llm_manager.generate(provider, messages, model_name=model_name, config=config)
+        
+        print(f"   🌐 Web HyDE: generated via {response.provider} ({response.model_name}) in {response.latency_ms:.2f}ms")
+        return response.text.strip()
+
+    except Exception as e:
+        print(f"   ⚠️ Web HyDE failed ({e}), using original query")
+        return query
+

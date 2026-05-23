@@ -18,7 +18,22 @@ class WebSearcher:
             print(f"   ❌ duckduckgo_search import failed: {e}")
             return results
 
+        # Rule-based simple Thai greeting & filler purification
         clean_query = query.strip()
+        
+        thai_fillers = [
+            "สวัสดีครับ", "สวัสดีค่ะ", "สวัสดี", "ดีครับ", "ดีค่ะ", 
+            "ช่วยหาหน่อย", "ช่วยค้นหาหน่อย", "ช่วยหา", "ช่วยค้นหา",
+            "ตอนนี้มีอะไรบ้าง", "มีอะไรบ้าง", "หน่อยครับ", "หน่อยค่ะ", "หน่อย"
+        ]
+        
+        for filler in sorted(thai_fillers, key=len, reverse=True):
+            clean_query = clean_query.replace(filler, "")
+            
+        clean_query = " ".join(clean_query.split()).strip()
+        
+        if not clean_query:
+            clean_query = query.strip()
         
         # Try multiple backends sequentially to ensure high resilience against rate limits & blocks
         for backend in ["lite", "html", "api"]:
