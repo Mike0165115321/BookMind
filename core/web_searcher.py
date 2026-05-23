@@ -30,8 +30,23 @@ class WebSearcher:
         for filler in sorted(thai_fillers, key=len, reverse=True):
             clean_query = clean_query.replace(filler, "")
             
+        # Clean up punctuation marks and special symbols that degrade search engine accuracy
+        punctuation_to_remove = ['"', "'", '`', '(', ')', '[', ']', '{', '}', ',', '.', '!', '?', '-', '_', '+', '=', '*', '/', '\\', '|', '&', '^', '%', '$', '#', '@']
+        for p in punctuation_to_remove:
+            clean_query = clean_query.replace(p, " ")
+            
+        # Standardize whitespace spacing
         clean_query = " ".join(clean_query.split()).strip()
         
+        # Word-level truncation to prevent query bloat
+        words = clean_query.split()
+        if len(words) > 8:
+            clean_query = " ".join(words[:8])
+            
+        # Character-level truncation safeguard
+        if len(clean_query) > 100:
+            clean_query = clean_query[:100].strip()
+            
         if not clean_query:
             clean_query = query.strip()
         

@@ -66,17 +66,6 @@
                         </div>
                         <div id="webHydeContent" class="section-content">
                             <div class="form-row">
-                                <div class="form-group" style="grid-column: span 2;">
-                                    <div class="toggle-control">
-                                        <label class="toggle-switch">
-                                            <input type="checkbox" id="enableWebHyde">
-                                            <span class="toggle-slider"></span>
-                                        </label>
-                                        <span class="toggle-label">เปิดใช้งาน HyDE เฉพาะเจาะจงสำหรับการค้นหาเว็บ (ช่วยสกัดคีย์เวิร์ดอัจฉริยะ)</span>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="form-row" id="webHydeModelRow" style="display: none;">
                                 <div class="form-group">
                                     <label>เลือกค่ายโมเดล</label>
                                     <select id="webHydeProvider" class="form-select"></select>
@@ -553,17 +542,7 @@
                 setupSection('agentic', settings.agentic_provider || 'groq', settings.agentic_model);
                 setupSection('gen', settings.gen_provider, settings.gen_model);
 
-                // Setup Web Search HyDE UI State
-                const enableWebHyde = settings.enable_web_hyde === 'true' || settings.enable_web_hyde === true;
-                const enableWebHydeEl = document.getElementById('enableWebHyde');
-                const webHydeModelRow = document.getElementById('webHydeModelRow');
-                if (enableWebHydeEl && webHydeModelRow) {
-                    enableWebHydeEl.checked = enableWebHyde;
-                    webHydeModelRow.style.display = enableWebHyde ? 'flex' : 'none';
-                    enableWebHydeEl.addEventListener('change', (e) => {
-                        webHydeModelRow.style.display = e.target.checked ? 'flex' : 'none';
-                    });
-                }
+
 
                 // Setup Persona Section
                 const personasData = await loadPersonasUI();
@@ -964,7 +943,7 @@
             const settings = {
                 hyde_provider: document.getElementById('hydeProvider').value,
                 hyde_model: document.getElementById('hydeModel').value,
-                enable_web_hyde: document.getElementById('enableWebHyde').checked,
+                enable_web_hyde: true,
                 web_hyde_provider: document.getElementById('webHydeProvider').value,
                 web_hyde_model: document.getElementById('webHydeModel').value,
                 agentic_provider: document.getElementById('agenticProvider').value,
