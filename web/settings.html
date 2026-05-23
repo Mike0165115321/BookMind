@@ -12,94 +12,7 @@
     <!-- CSS Modules -->
     <link rel="stylesheet" href="/static/css/base.css">
     <link rel="stylesheet" href="/static/css/layout.css">
-    <style>
-        body {
-            overflow-y: auto !important;
-        }
-        .settings-container {
-            max-width: 800px;
-            margin: 40px auto;
-            padding: 40px;
-            background: var(--bg-sidebar);
-            border: 1px solid var(--border);
-            border-radius: var(--radius-lg);
-            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-        }
-        .settings-header {
-            display: flex;
-            align-items: center;
-            gap: 20px;
-            margin-bottom: 40px;
-        }
-        .back-btn {
-            background: var(--bg-input);
-            border: 1px solid var(--border);
-            color: var(--text-main);
-            padding: 10px 15px;
-            border-radius: var(--radius-md);
-            cursor: pointer;
-            text-decoration: none;
-            font-size: 14px;
-            transition: var(--transition);
-        }
-        .back-btn:hover {
-            background: var(--border);
-        }
-        .settings-section {
-            margin-bottom: 32px;
-            padding: 24px;
-            background: rgba(255,255,255,0.03);
-            border-radius: var(--radius-md);
-            border: 1px solid var(--border);
-        }
-        .section-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-        }
-        .section-header h2 {
-            font-size: 18px;
-            color: var(--accent);
-            margin: 0;
-        }
-        .section-content {
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-            animation: fadeIn 0.3s ease;
-        }
-        .form-row {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 20px;
-        }
-        .form-group label {
-            display: block;
-            margin-bottom: 8px;
-            font-size: 13px;
-            color: var(--text-muted);
-        }
-        .form-select {
-            width: 100%;
-            padding: 12px;
-            background: var(--bg-input);
-            border: 1px solid var(--border);
-            border-radius: var(--radius-md);
-            color: var(--text-main);
-            font-size: 15px;
-            outline: none;
-            transition: var(--transition);
-        }
-        .form-select:focus {
-            border-color: var(--accent);
-        }
-        
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(-10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-    </style>
+    <link rel="stylesheet" href="/static/css/settings.css">
 </head>
 <body class="theme-dark">
     <div class="settings-container">
@@ -108,156 +21,263 @@
             <h1>ตั้งค่าระบบ</h1>
         </div>
 
-        <!-- ── HyDE Section ── -->
-        <div class="settings-section">
-            <div class="section-header">
-                <h2>🪄 HyDE Settings (Query Expansion)</h2>
+        <div class="settings-layout">
+            <!-- Sidebar Navigation -->
+            <div class="settings-sidebar">
+                <button class="settings-tab-btn active" data-tab="models">
+                    <i class="fas fa-brain"></i> AI Models (ค่ายโมเดล)
+                </button>
+                <button class="settings-tab-btn" data-tab="rag">
+                    <i class="fas fa-sliders-h"></i> RAG & Search Tuning
+                </button>
+                <button class="settings-tab-btn" data-tab="persona">
+                    <i class="fas fa-user-tag"></i> AI Persona (บทบาท)
+                </button>
             </div>
-            <div id="hydeContent" class="section-content">
-                <div class="form-row">
-                    <div class="form-group">
-                        <label>เลือกค่ายโมเดล</label>
-                        <select id="hydeProvider" class="form-select"></select>
-                    </div>
-                    <div class="form-group">
-                        <label>เลือกโมเดล</label>
-                        <select id="hydeModel" class="form-select"></select>
-                    </div>
-                </div>
-            </div>
-        </div>
 
-        <!-- ── Agentic Brain Section (New) ── -->
-        <div class="settings-section">
-            <div class="section-header">
-                <h2>🔬 Agentic Brain (Decomposer & Evaluator)</h2>
-            </div>
-            <div id="agenticContent" class="section-content">
-                <div class="form-row">
-                    <div class="form-group">
-                        <label>เลือกค่ายโมเดล</label>
-                        <select id="agenticProvider" class="form-select"></select>
-                    </div>
-                    <div class="form-group">
-                        <label>เลือกโมเดล</label>
-                        <select id="agenticModel" class="form-select"></select>
-                    </div>
-                </div>
-                <p style="font-size: 12px; color: var(--text-muted); margin-top: -10px;">
-                    * โมเดลส่วนนี้ใช้สำหรับการวิเคราะห์และประเมินความเพียงพอของข้อมูลในโหมด Agentic
-                </p>
-            </div>
-        </div>
-
-        <!-- ── Generation Section ── -->
-        <div class="settings-section">
-            <div class="section-header">
-                <h2>🧠 Generation Settings (คำตอบหลัก)</h2>
-            </div>
-            <div id="genContent" class="section-content">
-                <div class="form-row">
-                    <div class="form-group">
-                        <label>เลือกค่ายโมเดล</label>
-                        <select id="genProvider" class="form-select"></select>
-                    </div>
-                    <div class="form-group">
-                        <label>เลือกโมเดล</label>
-                        <select id="genModel" class="form-select"></select>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- ── Persona Section ── -->
-        <div class="settings-section">
-            <div class="section-header">
-                <h2>🎭 Persona Settings (บทบาทของ AI)</h2>
-            </div>
-            <div class="section-content">
-                <div class="form-row">
-                    <div class="form-group" style="display: flex; gap: 10px; align-items: flex-end;">
-                        <div style="flex: 1;">
-                            <label>เลือก Persona</label>
-                            <select id="personaId" class="form-select"></select>
+            <!-- Content Area -->
+            <div class="settings-content-area">
+                
+                <!-- ── TAB: Models ── -->
+                <div id="tab-models" class="settings-tab-panel active">
+                    <!-- ── HyDE Section ── -->
+                    <div class="settings-section">
+                        <div class="section-header">
+                            <h2>🪄 HyDE Settings (Query Expansion)</h2>
                         </div>
-                        <button id="showAddPersonaBtn" class="primary-btn" style="padding: 12px; white-space: nowrap; height: 46px; background: rgba(255,255,255,0.1); border: 1px solid var(--border);">
-                            <i class="fas fa-plus"></i> เพิ่มบทบาท
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Persona Details Display -->
-                <div id="personaDetails" style="margin-top: 15px; padding: 15px; background: rgba(255,255,255,0.05); border-radius: var(--radius-md); border: 1px solid var(--border);">
-                    <h4 id="pdLabel" style="margin: 0 0 5px 0; color: var(--accent);"></h4>
-                    <p id="pdDesc" style="margin: 0 0 10px 0; font-size: 13px; color: var(--text-muted);"></p>
-                    
-                    <div style="display: flex; gap: 20px; font-size: 12px; color: var(--text-muted); margin-bottom: 12px; background: rgba(0,0,0,0.1); padding: 8px; border-radius: 6px;">
-                        <span><i class="fas fa-comment-dots" style="color: var(--accent-dim);"></i> Tone: <span id="pdTone" style="color: var(--text-main); font-weight: 500;"></span></span>
-                        <span><i class="fas fa-globe" style="color: var(--accent-dim);"></i> Language: <span id="pdLang" style="color: var(--text-main); font-weight: 500;"></span></span>
-                        <span><i class="fas fa-thermometer-half" style="color: var(--accent-dim);"></i> Temp: <span id="pdTemp" style="color: var(--text-main); font-weight: 500;"></span></span>
-                    </div>
-
-                    <div style="font-size: 13px; color: var(--text-main);">
-                        <strong>System Prompt:</strong>
-                        <pre id="pdPrompt" style="white-space: pre-wrap; background: rgba(0,0,0,0.2); padding: 10px; border-radius: 4px; margin-top: 5px; font-family: inherit; font-size: 13px;"></pre>
-                    </div>
-                </div>
-
-                <!-- Add Persona Form (Hidden by default) -->
-                <div id="addPersonaForm" style="display: none; margin-top: 20px; padding: 20px; background: rgba(0,0,0,0.2); border-radius: var(--radius-md); border: 1px solid var(--border);">
-                    <h3 style="margin-top: 0; margin-bottom: 16px; font-size: 15px; color: var(--accent-dim);">สร้างบทบาทใหม่</h3>
-                    <div class="form-group" style="margin-bottom: 12px;">
-                        <label>ชื่อบทบาท (Label)</label>
-                        <input type="text" id="newPersonaLabel" class="form-select" placeholder="เช่น ผู้ช่วยนักการตลาด">
-                    </div>
-                    <div class="form-row" style="margin-bottom: 12px;">
-                        <div class="form-group">
-                            <label>Tone (น้ำเสียง) - เลือกได้หลายอัน</label>
-                            <div class="tone-selector" style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 4px;">
-                                <button type="button" class="tone-btn" data-tone="polite" style="padding: 6px 10px; background: rgba(255,255,255,0.05); color: var(--text-main); border: 1px solid var(--border); border-radius: 6px; cursor: pointer; font-size: 12px;">สุภาพ</button>
-                                <button type="button" class="tone-btn" data-tone="formal" style="padding: 6px 10px; background: rgba(255,255,255,0.05); color: var(--text-main); border: 1px solid var(--border); border-radius: 6px; cursor: pointer; font-size: 12px;">เป็นทางการ</button>
-                                <button type="button" class="tone-btn" data-tone="friendly" style="padding: 6px 10px; background: rgba(255,255,255,0.05); color: var(--text-main); border: 1px solid var(--border); border-radius: 6px; cursor: pointer; font-size: 12px;">เป็นกันเอง</button>
-                                <button type="button" class="tone-btn" data-tone="concise" style="padding: 6px 10px; background: rgba(255,255,255,0.05); color: var(--text-main); border: 1px solid var(--border); border-radius: 6px; cursor: pointer; font-size: 12px;">กระชับ</button>
-                                <button type="button" class="tone-btn" data-tone="detailed" style="padding: 6px 10px; background: rgba(255,255,255,0.05); color: var(--text-main); border: 1px solid var(--border); border-radius: 6px; cursor: pointer; font-size: 12px;">ละเอียด</button>
-                                <button type="button" class="tone-btn" data-tone="humorous" style="padding: 6px 10px; background: rgba(255,255,255,0.05); color: var(--text-main); border: 1px solid var(--border); border-radius: 6px; cursor: pointer; font-size: 12px;">สนุกสนาน</button>
-                                <button type="button" class="tone-btn" data-tone="serious" style="padding: 6px 10px; background: rgba(255,255,255,0.05); color: var(--text-main); border: 1px solid var(--border); border-radius: 6px; cursor: pointer; font-size: 12px;">จริงจัง</button>
-                                <button type="button" class="tone-btn" data-tone="empathetic" style="padding: 6px 10px; background: rgba(255,255,255,0.05); color: var(--text-main); border: 1px solid var(--border); border-radius: 6px; cursor: pointer; font-size: 12px;">ให้กำลังใจ</button>
-                                <button type="button" class="tone-btn" data-tone="creative" style="padding: 6px 10px; background: rgba(255,255,255,0.05); color: var(--text-main); border: 1px solid var(--border); border-radius: 6px; cursor: pointer; font-size: 12px;">สร้างสรรค์</button>
-                                <button type="button" class="tone-btn active" data-tone="neutral" style="padding: 6px 10px; background: var(--blue-primary); color: white; border: 1px solid var(--blue-primary); border-radius: 6px; cursor: pointer; font-size: 12px;">ทั่วไป</button>
+                        <div id="hydeContent" class="section-content">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>เลือกค่ายโมเดล</label>
+                                    <select id="hydeProvider" class="form-select"></select>
+                                </div>
+                                <div class="form-group">
+                                    <label>เลือกโมเดล</label>
+                                    <select id="hydeModel" class="form-select"></select>
+                                </div>
                             </div>
                         </div>
-                        <div class="form-group">
-                            <label>Language (ภาษา)</label>
-                            <div class="lang-selector" style="display: flex; gap: 8px; margin-bottom: 4px;">
-                                <button type="button" class="lang-btn active" data-lang="th" style="padding: 8px 12px; background: var(--blue-primary); color: white; border: 1px solid var(--blue-primary); border-radius: 6px; cursor: pointer;">ไทย</button>
-                                <button type="button" class="lang-btn" data-lang="en" style="padding: 8px 12px; background: rgba(255,255,255,0.05); color: var(--text-main); border: 1px solid var(--border); border-radius: 6px; cursor: pointer;">English</button>
-                                <button type="button" class="lang-btn" data-lang="zh" style="padding: 8px 12px; background: rgba(255,255,255,0.05); color: var(--text-main); border: 1px solid var(--border); border-radius: 6px; cursor: pointer;">中文</button>
-                                <button type="button" class="lang-btn" data-lang="ja" style="padding: 8px 12px; background: rgba(255,255,255,0.05); color: var(--text-main); border: 1px solid var(--border); border-radius: 6px; cursor: pointer;">日本語</button>
+                    </div>
+
+                    <!-- ── Agentic Brain Section ── -->
+                    <div class="settings-section">
+                        <div class="section-header">
+                            <h2>🔬 Agentic Brain (Decomposer & Evaluator)</h2>
+                        </div>
+                        <div id="agenticContent" class="section-content">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>เลือกค่ายโมเดล</label>
+                                    <select id="agenticProvider" class="form-select"></select>
+                                </div>
+                                <div class="form-group">
+                                    <label>เลือกโมเดล</label>
+                                    <select id="agenticModel" class="form-select"></select>
+                                </div>
                             </div>
-                            <input type="hidden" id="newPersonaLang" value="th">
-                            <small style="color: var(--accent-dim); font-size: 11px; display: block;">⚠️ ภาษาควรเป็นภาษาเดียวกันทั้งหมดเพื่อประสิทธิภาพสูงสุด</small>
+                            <p class="help-text">
+                                * โมเดลส่วนนี้ใช้สำหรับการวิเคราะห์และประเมินความเพียงพอของข้อมูลในโหมด Agentic
+                            </p>
                         </div>
                     </div>
-                    <div class="form-group" style="margin-bottom: 12px;">
-                        <label>Temperature (ความสร้างสรรค์: 0.0 - 1.0)</label>
-                        <input type="number" id="newPersonaTemp" class="form-select" min="0" max="1" step="0.1" value="0.5">
-                    </div>
-                    <div class="form-group" style="margin-bottom: 16px;">
-                        <label>System Prompt (คำสั่งควบคุมบทบาท)</label>
-                        <textarea id="newPersonaPrompt" class="form-select" rows="4" placeholder="พิมพ์คำสั่งให้ AI สวมบทบาท..." style="resize: vertical;"></textarea>
-                    </div>
-                    <div style="display: flex; gap: 10px; justify-content: flex-end;">
-                        <button id="cancelAddPersonaBtn" class="back-btn" style="padding: 8px 16px;">ยกเลิก</button>
-                        <button id="saveNewPersonaBtn" class="primary-btn" style="padding: 8px 16px;">บันทึกบทบาท</button>
+
+                    <!-- ── Generation Section ── -->
+                    <div class="settings-section">
+                        <div class="section-header">
+                            <h2>🧠 Generation Settings (คำตอบหลัก)</h2>
+                        </div>
+                        <div id="genContent" class="section-content">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>เลือกค่ายโมเดล</label>
+                                    <select id="genProvider" class="form-select"></select>
+                                </div>
+                                <div class="form-group">
+                                    <label>เลือกโมเดล</label>
+                                    <select id="genModel" class="form-select"></select>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
-            </div>
-        </div>
 
-        <div class="save-bar" style="display: flex; justify-content: flex-end;">
-            <button id="saveBtn" class="primary-btn" style="padding: 12px 40px; font-size: 16px;">
-                <i class="fas fa-save" style="margin-right: 10px;"></i> บันทึกการตั้งค่า
-            </button>
+                <!-- ── TAB: RAG & Search Tuning ── -->
+                <div id="tab-rag" class="settings-tab-panel">
+                    <div class="settings-section">
+                        <div class="section-header">
+                            <h2>📊 RAG Tuning & Data Controls (ขนาดข้อมูลและการค้นหา)</h2>
+                        </div>
+                        <div id="ragContent" class="section-content">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>ขนาดชิ้นส่วนข้อมูล (Chunk Size - ตัวอักษร)</label>
+                                    <input type="number" id="chunkSize" class="form-select" min="100" max="2000" step="50" placeholder="500">
+                                    <small class="help-text">* มีผลเมื่อประมวลผลไฟล์ใหม่</small>
+                                </div>
+                                <div class="form-group">
+                                    <label>ความคาบเกี่ยวของข้อมูล (Chunk Overlap - ตัวอักษร)</label>
+                                    <input type="number" id="chunkOverlap" class="form-select" min="0" max="500" step="10" placeholder="100">
+                                    <small class="help-text">* ป้องกันข้อมูลตกหล่นที่รอยต่อ</small>
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>จำนวนข้อมูลที่ดึงมาวิเคราะห์ (Top-K Retrieval)</label>
+                                    <input type="number" id="topKRetrieval" class="form-select" min="1" max="50" step="1" placeholder="10">
+                                    <small class="help-text">* จำนวนแคนดิเดตแรกจาก Vector Search</small>
+                                </div>
+                                <div class="form-group">
+                                    <label>จำนวนข้อมูลที่ส่งให้ AI ตอบ (Top-K Display)</label>
+                                    <input type="number" id="topKDisplay" class="form-select" min="1" max="20" step="1" placeholder="5">
+                                    <small class="help-text">* จำนวนข้อมูลสุดท้ายที่ส่งให้ LLM ตอบ</small>
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>สัดส่วนเชิงความหมาย (Hybrid Semantic Weight)</label>
+                                    <input type="number" id="hybridDenseWeight" class="form-select" min="0" max="1" step="0.05" placeholder="0.7">
+                                    <small class="help-text">* น้ำหนักการค้นหาเชิงความหมาย (Dense/FAISS)</small>
+                                </div>
+                                <div class="form-group">
+                                    <label>สัดส่วนคำสำคัญ (Hybrid Keyword Weight)</label>
+                                    <input type="number" id="hybridBm25Weight" class="form-select" min="0" max="1" step="0.05" placeholder="0.3" disabled>
+                                    <small class="help-text">* คำนวณอัตโนมัติเพื่อให้รวมกันได้ 1.0</small>
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>เกณฑ์คะแนนขั้นต่ำ (Relevance Threshold)</label>
+                                    <input type="number" id="relevanceThreshold" class="form-select" min="0.0" max="1.0" step="0.01" placeholder="0.15">
+                                    <small class="help-text">* คะแนนต่ำกว่านี้จะถูกกรองออก</small>
+                                </div>
+                                <div class="form-group">
+                                    <label>Adaptive Rerank Gap Threshold</label>
+                                    <input type="number" id="rerankScoreGap" class="form-select" min="0.0" max="1.0" step="0.01" placeholder="0.15">
+                                    <small class="help-text">* ช่องว่างคะแนนเพื่อข้าม Reranker (~300ms)</small>
+                                </div>
+                            </div>
+                            
+                            <h3 class="agentic-limits-title">
+                                <i class="fas fa-robot"></i> Agentic Search Limits (ข้อจำกัดในโหมด Agentic)
+                            </h3>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>รอบการทำงานสูงสุด (Agentic Max Iterations)</label>
+                                    <input type="number" id="agenticMaxIterations" class="form-select" min="1" max="10" step="1" placeholder="3">
+                                    <small class="help-text">* ป้องกัน AI ค้นหาลูปไม่สิ้นสุด</small>
+                                </div>
+                                <div class="form-group">
+                                    <label>เกณฑ์ความเพียงพอข้อมูล (Sufficiency Threshold)</label>
+                                    <input type="number" id="agenticSufficiencyThreshold" class="form-select" min="0.1" max="1.0" step="0.05" placeholder="0.7">
+                                    <small class="help-text">* ความมั่นใจเพื่อหยุดการค้นหาเพิ่มเติม</small>
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>จำนวนข้อมูลรวมสูงสุด (Agentic Max Chunks)</label>
+                                    <input type="number" id="agenticMaxChunks" class="form-select" min="5" max="100" step="5" placeholder="20">
+                                    <small class="help-text">* ลิมิตจำนวนชิ้นข้อมูลรวมทุกรอบการค้นหา</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ── TAB: Persona Settings ── -->
+                <div id="tab-persona" class="settings-tab-panel">
+                    <div class="settings-section">
+                        <div class="section-header">
+                            <h2>🎭 Persona Settings (บทบาทของ AI)</h2>
+                        </div>
+                        <div class="section-content">
+                            <div class="form-row">
+                                <div class="form-group" style="display: flex; gap: 10px; align-items: flex-end; flex-direction: row;">
+                                    <div style="flex: 1;">
+                                        <label>เลือก Persona</label>
+                                        <select id="personaId" class="form-select"></select>
+                                    </div>
+                                    <button id="showAddPersonaBtn" class="primary-btn" style="padding: 12px; white-space: nowrap; height: 46px; background: rgba(255,255,255,0.06); border: 1px solid var(--border);">
+                                        <i class="fas fa-plus"></i> เพิ่มบทบาท
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Persona Details Display -->
+                            <div id="personaDetails">
+                                <h4 id="pdLabel" style="margin: 0 0 5px 0; color: var(--accent);"></h4>
+                                <p id="pdDesc" style="margin: 0 0 10px 0; font-size: 13px; color: var(--text-muted);"></p>
+                                
+                                <div class="persona-meta-summary">
+                                    <span><i class="fas fa-comment-dots" style="color: var(--blue-light);"></i> Tone: <span id="pdTone" style="color: var(--text-main); font-weight: 500;"></span></span>
+                                    <span><i class="fas fa-globe" style="color: var(--blue-light);"></i> Language: <span id="pdLang" style="color: var(--text-main); font-weight: 500;"></span></span>
+                                    <span><i class="fas fa-thermometer-half" style="color: var(--blue-light);"></i> Temp: <span id="pdTemp" style="color: var(--text-main); font-weight: 500;"></span></span>
+                                </div>
+
+                                <div style="font-size: 13px; color: var(--text-main);">
+                                    <strong>System Prompt:</strong>
+                                    <pre id="pdPrompt"></pre>
+                                </div>
+                            </div>
+
+                            <!-- Add Persona Form -->
+                            <div id="addPersonaForm">
+                                <h3 style="margin-top: 0; margin-bottom: 16px; font-size: 15px; color: var(--blue-light);">สร้างบทบาทใหม่</h3>
+                                <div class="form-group" style="margin-bottom: 12px;">
+                                    <label>ชื่อบทบาท (Label)</label>
+                                    <input type="text" id="newPersonaLabel" class="form-select" placeholder="เช่น ผู้ช่วยนักการตลาด">
+                                </div>
+                                <div class="form-row" style="margin-bottom: 12px;">
+                                    <div class="form-group">
+                                        <label>Tone (น้ำเสียง) - เลือกได้หลายอัน</label>
+                                        <div class="tone-selector">
+                                            <button type="button" class="tone-btn" data-tone="polite">สุภาพ</button>
+                                            <button type="button" class="tone-btn" data-tone="formal">เป็นทางการ</button>
+                                            <button type="button" class="tone-btn" data-tone="friendly">เป็นกันเอง</button>
+                                            <button type="button" class="tone-btn" data-tone="concise">กระชับ</button>
+                                            <button type="button" class="tone-btn" data-tone="detailed">ละเอียด</button>
+                                            <button type="button" class="tone-btn" data-tone="humorous">สนุกสนาน</button>
+                                            <button type="button" class="tone-btn" data-tone="serious">จริงจัง</button>
+                                            <button type="button" class="tone-btn" data-tone="empathetic">ให้กำลังใจ</button>
+                                            <button type="button" class="tone-btn" data-tone="creative">สร้างสรรค์</button>
+                                            <button type="button" class="tone-btn active" data-tone="neutral">ทั่วไป</button>
+                                        </div>
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Language (ภาษา)</label>
+                                        <div class="lang-selector">
+                                            <button type="button" class="lang-btn active" data-lang="th">ไทย</button>
+                                            <button type="button" class="lang-btn" data-lang="en">English</button>
+                                            <button type="button" class="lang-btn" data-lang="zh">中文</button>
+                                            <button type="button" class="lang-btn" data-lang="ja">日本語</button>
+                                        </div>
+                                        <input type="hidden" id="newPersonaLang" value="th">
+                                        <small style="color: var(--orange); font-size: 11px; display: block; margin-top: 4px;">⚠️ ภาษาควรเป็นภาษาเดียวกันทั้งหมดเพื่อประสิทธิภาพสูงสุด</small>
+                                    </div>
+                                </div>
+                                <div class="form-group" style="margin-bottom: 12px;">
+                                    <label>Temperature (ความสร้างสรรค์: 0.0 - 1.0)</label>
+                                    <input type="number" id="newPersonaTemp" class="form-select" min="0" max="1" step="0.1" value="0.5">
+                                </div>
+                                <div class="form-group" style="margin-bottom: 16px;">
+                                    <label>System Prompt (คำสั่งควบคุมบทบาท)</label>
+                                    <textarea id="newPersonaPrompt" class="form-select" rows="4" placeholder="พิมพ์คำสั่งให้ AI สวมบทบาท..." style="resize: vertical;"></textarea>
+                                </div>
+                                <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                                    <button id="cancelAddPersonaBtn" class="back-btn" style="padding: 8px 16px;">ยกเลิก</button>
+                                    <button id="saveNewPersonaBtn" class="primary-btn" style="padding: 8px 16px;">บันทึกบทบาท</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Save Buttons (Sticky Bar) -->
+                <div class="save-bar">
+                    <button id="saveBtn" class="primary-btn">
+                        <i class="fas fa-save" style="margin-right: 10px;"></i> บันทึกการตั้งค่า
+                    </button>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -318,10 +338,36 @@
                     pSelect.value = personasData.default;
                 }
 
+                // Populate RAG Tuning Fields
+                document.getElementById('chunkSize').value = settings.chunk_size || 500;
+                document.getElementById('chunkOverlap').value = settings.chunk_overlap !== undefined ? settings.chunk_overlap : 100;
+                document.getElementById('topKRetrieval').value = settings.top_k_retrieval || 10;
+                document.getElementById('topKDisplay').value = settings.top_k_display || 5;
+                
+                const denseW = settings.hybrid_dense_weight !== undefined ? parseFloat(settings.hybrid_dense_weight) : 0.7;
+                document.getElementById('hybridDenseWeight').value = denseW;
+                document.getElementById('hybridBm25Weight').value = (1.0 - denseW).toFixed(2);
+                
+                document.getElementById('relevanceThreshold').value = settings.relevance_threshold !== undefined ? settings.relevance_threshold : 0.15;
+                document.getElementById('rerankScoreGap').value = settings.rerank_score_gap !== undefined ? settings.rerank_score_gap : 0.15;
+                
+                document.getElementById('agenticMaxIterations').value = settings.agentic_max_iterations || 3;
+                document.getElementById('agenticSufficiencyThreshold').value = settings.agentic_sufficiency_threshold !== undefined ? settings.agentic_sufficiency_threshold : 0.7;
+                document.getElementById('agenticMaxChunks').value = settings.agentic_max_chunks || 20;
+
             } catch (err) {
                 console.error("Init failed:", err);
             }
         }
+
+        // Hybrid weight auto-calculation logic
+        document.getElementById('hybridDenseWeight').addEventListener('input', (e) => {
+            let val = parseFloat(e.target.value);
+            if (isNaN(val)) val = 0.7;
+            if (val < 0) val = 0;
+            if (val > 1) val = 1;
+            document.getElementById('hybridBm25Weight').value = (1.0 - val).toFixed(2);
+        });
 
         function getProviderEmoji(provider) {
             const emojis = {
@@ -380,6 +426,40 @@
         }
 
         document.getElementById('saveBtn').addEventListener('click', async () => {
+            // Validation
+            const chunkSize = parseInt(document.getElementById('chunkSize').value);
+            const chunkOverlap = parseInt(document.getElementById('chunkOverlap').value);
+            const topKRetrieval = parseInt(document.getElementById('topKRetrieval').value);
+            const topKDisplay = parseInt(document.getElementById('topKDisplay').value);
+            const hybridDenseWeight = parseFloat(document.getElementById('hybridDenseWeight').value);
+            const hybridBm25Weight = parseFloat(document.getElementById('hybridBm25Weight').value);
+            const relevanceThreshold = parseFloat(document.getElementById('relevanceThreshold').value);
+            const rerankScoreGap = parseFloat(document.getElementById('rerankScoreGap').value);
+            const agenticMaxIterations = parseInt(document.getElementById('agenticMaxIterations').value);
+            const agenticSufficiencyThreshold = parseFloat(document.getElementById('agenticSufficiencyThreshold').value);
+            const agenticMaxChunks = parseInt(document.getElementById('agenticMaxChunks').value);
+
+            if (isNaN(chunkSize) || chunkSize < 100 || chunkSize > 2000) {
+                alert("กรุณากรอกขนาดชิ้นส่วนข้อมูล (Chunk Size) อยู่ระหว่าง 100 - 2000");
+                return;
+            }
+            if (isNaN(chunkOverlap) || chunkOverlap < 0 || chunkOverlap >= chunkSize) {
+                alert("กรุณากรอกความคาบเกี่ยวข้อมูล (Chunk Overlap) ให้ถูกต้อง (ต้องน้อยกว่าขนาดชิ้นส่วนข้อมูล)");
+                return;
+            }
+            if (isNaN(topKRetrieval) || topKRetrieval < 1) {
+                alert("กรุณากรอก Top-K Retrieval ให้มากกว่า 0");
+                return;
+            }
+            if (isNaN(topKDisplay) || topKDisplay < 1 || topKDisplay > topKRetrieval) {
+                alert("กรุณากรอก Top-K Display ให้มีค่าไม่เกิน Top-K Retrieval");
+                return;
+            }
+            if (isNaN(hybridDenseWeight) || hybridDenseWeight < 0 || hybridDenseWeight > 1) {
+                alert("กรุณากรอกสัดส่วนเชิงความหมายให้อยู่ระหว่าง 0.0 - 1.0");
+                return;
+            }
+
             const settings = {
                 hyde_provider: document.getElementById('hydeProvider').value,
                 hyde_model: document.getElementById('hydeModel').value,
@@ -387,7 +467,19 @@
                 agentic_model: document.getElementById('agenticModel').value,
                 gen_provider: document.getElementById('genProvider').value,
                 gen_model: document.getElementById('genModel').value,
-                persona_id: document.getElementById('personaId').value
+                persona_id: document.getElementById('personaId').value,
+
+                chunk_size: chunkSize,
+                chunk_overlap: chunkOverlap,
+                top_k_retrieval: topKRetrieval,
+                top_k_display: topKDisplay,
+                hybrid_dense_weight: hybridDenseWeight,
+                hybrid_bm25_weight: hybridBm25Weight,
+                relevance_threshold: relevanceThreshold,
+                rerank_score_gap: rerankScoreGap,
+                agentic_max_iterations: agenticMaxIterations,
+                agentic_sufficiency_threshold: agenticSufficiencyThreshold,
+                agentic_max_chunks: agenticMaxChunks
             };
 
             try {
@@ -553,6 +645,27 @@
             } catch (e) {
                 alert("❌ เกิดข้อผิดพลาด: " + e.message);
             }
+        });
+
+        // Tab switching logic
+        const tabBtns = document.querySelectorAll('.settings-tab-btn');
+        const tabPanels = document.querySelectorAll('.settings-tab-panel');
+
+        tabBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                const targetTab = btn.dataset.tab;
+
+                // Deactivate all buttons and panels
+                tabBtns.forEach(b => b.classList.remove('active'));
+                tabPanels.forEach(p => p.classList.remove('active'));
+
+                // Activate selected button and panel
+                btn.classList.add('active');
+                const activePanel = document.getElementById(`tab-${targetTab}`);
+                if (activePanel) {
+                    activePanel.classList.add('active');
+                }
+            });
         });
 
         init();

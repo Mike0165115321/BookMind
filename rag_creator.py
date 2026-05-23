@@ -16,8 +16,16 @@ from core.retrieval.tokenizer import tokenize_thai
 class TextChunker:
     """Splits long text into overlapping chunks at natural boundaries."""
     def __init__(self, chunk_size=None, chunk_overlap=None):
-        self.chunk_size = chunk_size or config.CHUNK_SIZE
-        self.chunk_overlap = chunk_overlap or config.CHUNK_OVERLAP
+        self._chunk_size = chunk_size
+        self._chunk_overlap = chunk_overlap
+
+    @property
+    def chunk_size(self):
+        return self._chunk_size or config.CHUNK_SIZE
+
+    @property
+    def chunk_overlap(self):
+        return self._chunk_overlap or config.CHUNK_OVERLAP
 
     def chunk(self, text, metadata_prefix=""):
         if not text.strip(): return []
