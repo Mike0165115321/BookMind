@@ -21,20 +21,20 @@
             <h1>ตั้งค่าระบบ</h1>
         </div>
 
-        <div class="settings-layout">
-            <!-- Sidebar Navigation -->
-            <div class="settings-sidebar">
-                <button class="settings-tab-btn active" data-tab="models">
-                    <i class="fas fa-brain"></i> AI Models (ค่ายโมเดล)
-                </button>
-                <button class="settings-tab-btn" data-tab="rag">
-                    <i class="fas fa-sliders-h"></i> RAG & Search Tuning
-                </button>
-                <button class="settings-tab-btn" data-tab="persona">
-                    <i class="fas fa-user-tag"></i> AI Persona (บทบาท)
-                </button>
-            </div>
+        <!-- Top Settings Navbar -->
+        <div class="settings-top-nav">
+            <button class="settings-tab-btn active" data-tab="models">
+                <i class="fas fa-brain"></i> AI Models (ค่ายโมเดล)
+            </button>
+            <button class="settings-tab-btn" data-tab="rag">
+                <i class="fas fa-sliders-h"></i> RAG & Search Tuning
+            </button>
+            <button class="settings-tab-btn" data-tab="persona">
+                <i class="fas fa-user-tag"></i> AI Persona (บทบาท)
+            </button>
+        </div>
 
+        <div class="settings-layout">
             <!-- Content Area -->
             <div class="settings-content-area">
                 
@@ -105,78 +105,188 @@
                 <div id="tab-rag" class="settings-tab-panel">
                     <div class="settings-section">
                         <div class="section-header">
-                            <h2>📊 RAG Tuning & Data Controls (ขนาดข้อมูลและการค้นหา)</h2>
+                            <h2>📊 RAG Tuning & Data Controls (การจูนระบบความรู้และการค้นหา)</h2>
                         </div>
+                        
                         <div id="ragContent" class="section-content">
-                            <div class="form-row">
-                                <div class="form-group">
-                                    <label>ขนาดชิ้นส่วนข้อมูล (Chunk Size - ตัวอักษร)</label>
-                                    <input type="number" id="chunkSize" class="form-select" min="100" max="2000" step="50" placeholder="500">
-                                    <small class="help-text">* มีผลเมื่อประมวลผลไฟล์ใหม่</small>
+                            <!-- ── Search Presets ── -->
+                            <div class="presets-section">
+                                <div class="presets-label-row">
+                                    <div class="presets-label">
+                                        <i class="fas fa-sliders-h"></i> ระดับโปรไฟล์การค้นหาแนะนำ (Search Presets)
+                                    </div>
                                 </div>
-                                <div class="form-group">
-                                    <label>ความคาบเกี่ยวของข้อมูล (Chunk Overlap - ตัวอักษร)</label>
-                                    <input type="number" id="chunkOverlap" class="form-select" min="0" max="500" step="10" placeholder="100">
-                                    <small class="help-text">* ป้องกันข้อมูลตกหล่นที่รอยต่อ</small>
+                                <div class="presets-grid">
+                                    <div class="preset-card" data-preset="1">
+                                        <div class="preset-level">Level 1</div>
+                                        <div class="preset-title">เร็วและประหยัด</div>
+                                    </div>
+                                    <div class="preset-card" data-preset="2">
+                                        <div class="preset-level">Level 2</div>
+                                        <div class="preset-title">มาตรฐาน (สมดุล)</div>
+                                    </div>
+                                    <div class="preset-card" data-preset="3">
+                                        <div class="preset-level">Level 3</div>
+                                        <div class="preset-title">เจาะลึก/เน้นบริบท</div>
+                                    </div>
+                                    <div class="preset-card" data-preset="4">
+                                        <div class="preset-level">Level 4</div>
+                                        <div class="preset-title">ความแม่นยำสูง</div>
+                                    </div>
+                                    <div class="preset-card" data-preset="5">
+                                        <div class="preset-level">Level 5</div>
+                                        <div class="preset-title">วิเคราะห์ขั้นสูง</div>
+                                    </div>
+                                    <div class="preset-card preset-custom" id="presetCardCustom">
+                                        <div class="preset-level">Custom</div>
+                                        <div class="preset-title">กำหนดเอง</div>
+                                    </div>
                                 </div>
-                            </div>
-                            <div class="form-row">
-                                <div class="form-group">
-                                    <label>จำนวนข้อมูลที่ดึงมาวิเคราะห์ (Top-K Retrieval)</label>
-                                    <input type="number" id="topKRetrieval" class="form-select" min="1" max="50" step="1" placeholder="10">
-                                    <small class="help-text">* จำนวนแคนดิเดตแรกจาก Vector Search</small>
-                                </div>
-                                <div class="form-group">
-                                    <label>จำนวนข้อมูลที่ส่งให้ AI ตอบ (Top-K Display)</label>
-                                    <input type="number" id="topKDisplay" class="form-select" min="1" max="20" step="1" placeholder="5">
-                                    <small class="help-text">* จำนวนข้อมูลสุดท้ายที่ส่งให้ LLM ตอบ</small>
-                                </div>
-                            </div>
-                            <div class="form-row">
-                                <div class="form-group">
-                                    <label>สัดส่วนเชิงความหมาย (Hybrid Semantic Weight)</label>
-                                    <input type="number" id="hybridDenseWeight" class="form-select" min="0" max="1" step="0.05" placeholder="0.7">
-                                    <small class="help-text">* น้ำหนักการค้นหาเชิงความหมาย (Dense/FAISS)</small>
-                                </div>
-                                <div class="form-group">
-                                    <label>สัดส่วนคำสำคัญ (Hybrid Keyword Weight)</label>
-                                    <input type="number" id="hybridBm25Weight" class="form-select" min="0" max="1" step="0.05" placeholder="0.3" disabled>
-                                    <small class="help-text">* คำนวณอัตโนมัติเพื่อให้รวมกันได้ 1.0</small>
-                                </div>
-                            </div>
-                            <div class="form-row">
-                                <div class="form-group">
-                                    <label>เกณฑ์คะแนนขั้นต่ำ (Relevance Threshold)</label>
-                                    <input type="number" id="relevanceThreshold" class="form-select" min="0.0" max="1.0" step="0.01" placeholder="0.15">
-                                    <small class="help-text">* คะแนนต่ำกว่านี้จะถูกกรองออก</small>
-                                </div>
-                                <div class="form-group">
-                                    <label>Adaptive Rerank Gap Threshold</label>
-                                    <input type="number" id="rerankScoreGap" class="form-select" min="0.0" max="1.0" step="0.01" placeholder="0.15">
-                                    <small class="help-text">* ช่องว่างคะแนนเพื่อข้าม Reranker (~300ms)</small>
+                                <div class="preset-desc-panel" id="presetDescPanel">
+                                    <strong>โปรไฟล์การค้นหาสำเร็จรูป</strong>
+                                    <span>คลิกเลือกระดับโปรไฟล์ที่เหมาะสมกับลักษณะการทำงานที่ท่านต้องการ</span>
                                 </div>
                             </div>
-                            
-                            <h3 class="agentic-limits-title">
-                                <i class="fas fa-robot"></i> Agentic Search Limits (ข้อจำกัดในโหมด Agentic)
-                            </h3>
-                            <div class="form-row">
-                                <div class="form-group">
-                                    <label>รอบการทำงานสูงสุด (Agentic Max Iterations)</label>
-                                    <input type="number" id="agenticMaxIterations" class="form-select" min="1" max="10" step="1" placeholder="3">
-                                    <small class="help-text">* ป้องกัน AI ค้นหาลูปไม่สิ้นสุด</small>
+
+                            <!-- ── RAG Wizard Step Tabs Nav ── -->
+                            <div class="rag-steps-nav">
+                                <div class="rag-step-btn active" data-step="prep">1. Data Preparation (การเตรียมข้อมูล)</div>
+                                <div class="rag-step-btn" data-step="retrieval">2. Retrieval Strategy (การค้นหาข้อมูล)</div>
+                                <div class="rag-step-btn" data-step="generation">3. Generation & Rerank (การประมวลผลคำตอบ)</div>
+                            </div>
+
+                            <!-- ── STEP 1: Data Preparation ── -->
+                            <div id="step-prep" class="rag-step-panel active">
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <div class="form-group-header">
+                                            <label>ขนาดชิ้นส่วนข้อมูล (Chunk Size - ตัวอักษร)</label>
+                                            <span class="slider-val-badge" id="chunkSizeBadge">500 ตัวอักษร</span>
+                                        </div>
+                                        <input type="range" id="chunkSize" min="100" max="2000" step="50" value="500">
+                                        <small class="help-text">* ความกว้างของกล่องข้อความที่จะแบ่ง มีผลเมื่อนำเข้าข้อมูลใหม่</small>
+                                    </div>
+                                    <div class="form-group">
+                                        <div class="form-group-header">
+                                            <label>ความคาบเกี่ยวของข้อมูล (Chunk Overlap - ตัวอักษร)</label>
+                                            <span class="slider-val-badge" id="chunkOverlapBadge">100 ตัวอักษร</span>
+                                        </div>
+                                        <input type="range" id="chunkOverlap" min="0" max="500" step="10" value="100">
+                                        <small class="help-text">* ส่วนเหลื่อมล้ำที่ช่วยรักษาประเด็นสำคัญไม่ให้ขาดระหว่างรอยต่อ</small>
+                                    </div>
                                 </div>
-                                <div class="form-group">
-                                    <label>เกณฑ์ความเพียงพอข้อมูล (Sufficiency Threshold)</label>
-                                    <input type="number" id="agenticSufficiencyThreshold" class="form-select" min="0.1" max="1.0" step="0.05" placeholder="0.7">
-                                    <small class="help-text">* ความมั่นใจเพื่อหยุดการค้นหาเพิ่มเติม</small>
+
+                                <!-- Interactive Chunk Overlap Previewer -->
+                                <div class="chunk-preview-container">
+                                    <div class="chunk-preview-bar">
+                                        <div class="chunk-part chunk-a" id="visualChunkA" style="width: 45%;">Unique Chunk A</div>
+                                        <div class="chunk-part chunk-overlap" id="visualOverlap" style="width: 10%;">Overlap Area</div>
+                                        <div class="chunk-part chunk-b" id="visualChunkB" style="width: 45%;">Unique Chunk B</div>
+                                    </div>
+                                    <div class="chunk-labels">
+                                        <span>📦 ชิ้นข้อความ A</span>
+                                        <span id="visualOverlapLabel">ส่วนทับซ้อน (Overlap): 100 ตัวอักษร</span>
+                                        <span>📦 ชิ้นข้อความ B</span>
+                                    </div>
                                 </div>
                             </div>
-                            <div class="form-row">
-                                <div class="form-group">
-                                    <label>จำนวนข้อมูลรวมสูงสุด (Agentic Max Chunks)</label>
-                                    <input type="number" id="agenticMaxChunks" class="form-select" min="5" max="100" step="5" placeholder="20">
-                                    <small class="help-text">* ลิมิตจำนวนชิ้นข้อมูลรวมทุกรอบการค้นหา</small>
+
+                            <!-- ── STEP 2: Retrieval Strategy ── -->
+                            <div id="step-retrieval" class="rag-step-panel">
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <div class="form-group-header">
+                                            <label>จำนวนข้อมูลที่ดึงมาวิเคราะห์ (Top-K Retrieval)</label>
+                                            <span class="slider-val-badge" id="topKRetrievalBadge">10 ชิ้นข้อมูล</span>
+                                        </div>
+                                        <input type="range" id="topKRetrieval" min="1" max="50" step="1" value="10">
+                                        <small class="help-text">* จำนวนแคนดิเดตแรกสุดที่จะถูกคัดกรองจาก Vector Search</small>
+                                    </div>
+                                    <div class="form-group">
+                                        <div class="form-group-header">
+                                            <label>เกณฑ์คะแนนขั้นต่ำ (Relevance Threshold)</label>
+                                            <span class="slider-val-badge" id="relevanceThresholdBadge">0.15 คะแนน</span>
+                                        </div>
+                                        <input type="range" id="relevanceThreshold" min="0.0" max="1.0" step="0.01" value="0.15">
+                                        <small class="help-text">* คะแนนความเหมือนขั้นต่ำที่ยอมรับได้ ต่ำกว่านี้จะถูกคัดออกทันที</small>
+                                    </div>
+                                </div>
+
+                                <div class="form-row" style="margin-top: 15px;">
+                                    <!-- Single Hybrid Weight Slider -->
+                                    <div class="form-group" style="grid-column: span 2;">
+                                        <div class="form-group-header">
+                                            <label>ความสมดุลการค้นหาแบบผสม (Hybrid Search Semantic vs Keyword Balance)</label>
+                                            <span class="slider-val-badge" id="hybridWeightBadge">Semantic 70% / Keyword 30%</span>
+                                        </div>
+                                        <div class="hybrid-slider-container">
+                                            <input type="range" id="hybridDenseWeight" min="0.0" max="1.0" step="0.05" value="0.7">
+                                            <input type="hidden" id="hybridBm25Weight" value="0.30">
+                                            <div class="hybrid-track-visualization">
+                                                <div class="hybrid-part hybrid-semantic" id="visualSemantic" style="width: 70%;"></div>
+                                                <div class="hybrid-part hybrid-keyword" id="visualKeyword" style="width: 30%;"></div>
+                                            </div>
+                                            <div class="hybrid-labels">
+                                                <span>🧠 บริบทเชิงความหมาย (Semantic / FAISS)</span>
+                                                <span>🔎 คำสำคัญที่พิมพ์เป๊ะๆ (Keyword / BM25)</span>
+                                            </div>
+                                        </div>
+                                        <small class="help-text">* ปรับสัดส่วนการให้น้ำหนักเพื่อค้นหาความหมายแฝงหรือค้นหาข้อความที่ตรงตัวอักษร</small>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- ── STEP 3: Generation & Rerank ── -->
+                            <div id="step-generation" class="rag-step-panel">
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <div class="form-group-header">
+                                            <label>จำนวนข้อมูลที่ส่งให้ AI ตอบ (Top-K Display)</label>
+                                            <span class="slider-val-badge" id="topKDisplayBadge">5 ชิ้นข้อมูล</span>
+                                        </div>
+                                        <input type="range" id="topKDisplay" min="1" max="20" step="1" value="5">
+                                        <small class="help-text">* จำนวนชิ้นข้อมูลสุดท้ายที่ส่งให้ LLM ใช้อ้างอิงเขียนคำตอบ</small>
+                                    </div>
+                                    <div class="form-group">
+                                        <div class="form-group-header">
+                                            <label>Adaptive Rerank Gap Threshold</label>
+                                            <span class="slider-val-badge" id="rerankScoreGapBadge">0.15 Gap</span>
+                                        </div>
+                                        <input type="range" id="rerankScoreGap" min="0.0" max="1.0" step="0.01" value="0.15">
+                                        <small class="help-text">* ช่องว่างคะแนนเพื่อประหยัดรอบ Reranker (~300ms) หากมั่นใจแล้ว</small>
+                                    </div>
+                                </div>
+
+                                <h3 class="agentic-limits-title">
+                                    <i class="fas fa-robot"></i> Agentic Search Limits (ข้อจำกัดในโหมด Agentic)
+                                </h3>
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <div class="form-group-header">
+                                            <label>รอบการทำงานสูงสุด (Agentic Max Iterations)</label>
+                                            <span class="slider-val-badge" id="agenticMaxIterationsBadge">3 รอบ</span>
+                                        </div>
+                                        <input type="range" id="agenticMaxIterations" min="1" max="10" step="1" value="3">
+                                        <small class="help-text">* ป้องกัน AI ค้นหาซ้ำวนลูปต่อเนื่องไม่สิ้นสุด</small>
+                                    </div>
+                                    <div class="form-group">
+                                        <div class="form-group-header">
+                                            <label>เกณฑ์ความเพียงพอข้อมูล (Sufficiency Threshold)</label>
+                                            <span class="slider-val-badge" id="agenticSufficiencyThresholdBadge">0.70 Threshold</span>
+                                        </div>
+                                        <input type="range" id="agenticSufficiencyThreshold" min="0.1" max="1.0" step="0.05" value="0.7">
+                                        <small class="help-text">* ค่าความน่าจะเป็นที่ AI ยอมหยุดค้นหาต่อเมื่อได้เนื้อหาครบกะเกณฑ์</small>
+                                    </div>
+                                </div>
+                                <div class="form-row" style="margin-top: 15px;">
+                                    <div class="form-group">
+                                        <div class="form-group-header">
+                                            <label>จำนวนข้อมูลรวมสูงสุด (Agentic Max Chunks)</label>
+                                            <span class="slider-val-badge" id="agenticMaxChunksBadge">20 ชิ้นข้อมูล</span>
+                                        </div>
+                                        <input type="range" id="agenticMaxChunks" min="5" max="100" step="5" value="20">
+                                        <small class="help-text">* ลิมิตเพดานจำนวนชิ้นข้อความทั้งหมดที่ดึงมารวมทุกรอบค้นหา</small>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -287,6 +397,89 @@
         let allModels = {};
         let allPersonas = {};
 
+        const RAG_PRESETS = {
+            "1": {
+                name: "ระดับ 1: รวดเร็ว & ประหยัด (Fast & Light)",
+                desc: "เหมาะสำหรับการตอบคำถามทั่วไปอย่างรวดเร็ว ประหยัดรอบการทำงานของ AI และประหยัดโทเคนการประมวลผล",
+                values: {
+                    chunkSize: 300,
+                    chunkOverlap: 50,
+                    topKRetrieval: 6,
+                    topKDisplay: 3,
+                    hybridDenseWeight: 0.70,
+                    relevanceThreshold: 0.20,
+                    rerankScoreGap: 0.25,
+                    agenticMaxIterations: 2,
+                    agenticSufficiencyThreshold: 0.80,
+                    agenticMaxChunks: 10
+                }
+            },
+            "2": {
+                name: "ระดับ 2: มาตรฐาน (Balanced - ค่าเริ่มต้น)",
+                desc: "จุดสมดุลที่ดีที่สุดระหว่างความเร็ว ความลึก และความถูกต้องของข้อมูล เหมาะสำหรับระบบการทำงานทั่วไปส่วนใหญ่",
+                values: {
+                    chunkSize: 500,
+                    chunkOverlap: 100,
+                    topKRetrieval: 10,
+                    topKDisplay: 5,
+                    hybridDenseWeight: 0.70,
+                    relevanceThreshold: 0.15,
+                    rerankScoreGap: 0.15,
+                    agenticMaxIterations: 3,
+                    agenticSufficiencyThreshold: 0.70,
+                    agenticMaxChunks: 20
+                }
+            },
+            "3": {
+                name: "ระดับ 3: เจาะลึก & เน้นบริบท (Detailed Context)",
+                desc: "ค้นหาชิ้นข้อมูลที่ยาวและกว้างขึ้น เหมาะสำหรับวิเคราะห์คู่มือหรือเนื้อหาที่มีความต่อเนื่องเชื่อมโยงสูง",
+                values: {
+                    chunkSize: 800,
+                    chunkOverlap: 150,
+                    topKRetrieval: 15,
+                    topKDisplay: 6,
+                    hybridDenseWeight: 0.75,
+                    relevanceThreshold: 0.12,
+                    rerankScoreGap: 0.12,
+                    agenticMaxIterations: 4,
+                    agenticSufficiencyThreshold: 0.65,
+                    agenticMaxChunks: 30
+                }
+            },
+            "4": {
+                name: "ระดับ 4: ความแม่นยำสูง (High Precision)",
+                desc: "เพิ่มความครอบคลุมและคัดกรองอย่างละเอียด เหมาะกับการค้นหารายละเอียดปลีกย่อยในข้อมูลที่อาจมีความขัดแย้งกัน",
+                values: {
+                    chunkSize: 1000,
+                    chunkOverlap: 200,
+                    topKRetrieval: 20,
+                    topKDisplay: 8,
+                    hybridDenseWeight: 0.80,
+                    relevanceThreshold: 0.10,
+                    rerankScoreGap: 0.08,
+                    agenticMaxIterations: 5,
+                    agenticSufficiencyThreshold: 0.60,
+                    agenticMaxChunks: 40
+                }
+            },
+            "5": {
+                name: "ระดับ 5: วิเคราะห์ขั้นสูงสุด (Agentic Ultimate)",
+                desc: "ค้นหาข้อมูลขนาดกว้างและเปิดให้ AI วิเคราะห์ประเมินผลหลายๆ รอบจนกว่าจะมั่นใจที่สุด ช้าลงแต่ครบถ้วนที่สุด",
+                values: {
+                    chunkSize: 1200,
+                    chunkOverlap: 250,
+                    topKRetrieval: 30,
+                    topKDisplay: 10,
+                    hybridDenseWeight: 0.85,
+                    relevanceThreshold: 0.08,
+                    rerankScoreGap: 0.05,
+                    agenticMaxIterations: 6,
+                    agenticSufficiencyThreshold: 0.55,
+                    agenticMaxChunks: 60
+                }
+            }
+        };
+
         async function loadPersonasUI() {
             const personas = await API.fetchPersonas();
             allPersonas = personas.personas || {};
@@ -355,19 +548,284 @@
                 document.getElementById('agenticSufficiencyThreshold').value = settings.agentic_sufficiency_threshold !== undefined ? settings.agentic_sufficiency_threshold : 0.7;
                 document.getElementById('agenticMaxChunks').value = settings.agentic_max_chunks || 20;
 
+                // Check and set matching search preset
+                checkCurrentPresetMatches();
+
             } catch (err) {
                 console.error("Init failed:", err);
             }
         }
 
-        // Hybrid weight auto-calculation logic
-        document.getElementById('hybridDenseWeight').addEventListener('input', (e) => {
-            let val = parseFloat(e.target.value);
-            if (isNaN(val)) val = 0.7;
-            if (val < 0) val = 0;
-            if (val > 1) val = 1;
-            document.getElementById('hybridBm25Weight').value = (1.0 - val).toFixed(2);
+        // Hybrid weight auto-calculation logic and reactive updates
+        document.getElementById('hybridDenseWeight').addEventListener('input', () => {
+            updateSliderBadges();
         });
+
+        // RAG Wizard Step switching logic
+        document.querySelectorAll('.rag-step-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const targetStep = btn.dataset.step;
+
+                // Deactivate all step buttons and panels
+                document.querySelectorAll('.rag-step-btn').forEach(b => b.classList.remove('active'));
+                document.querySelectorAll('.rag-step-panel').forEach(p => p.classList.remove('active'));
+
+                // Activate chosen step button and panel
+                btn.classList.add('active');
+                const activePanel = document.getElementById(`step-${targetStep}`);
+                if (activePanel) {
+                    activePanel.classList.add('active');
+                }
+            });
+        });
+
+        // Dynamic Slider Badges & Chunk Overlap visualizer updates
+        function updateSliderBadges() {
+            const chunkSizeInput = document.getElementById('chunkSize');
+            const chunkOverlapInput = document.getElementById('chunkOverlap');
+            
+            const chunkSizeVal = parseInt(chunkSizeInput.value) || 500;
+            
+            // Dynamic Overlap Limit Capping: Overlap must be smaller than chunk size
+            const maxOverlap = chunkSizeVal - 10;
+            chunkOverlapInput.max = maxOverlap;
+            
+            let chunkOverlapVal = parseInt(chunkOverlapInput.value) || 100;
+            if (chunkOverlapVal > maxOverlap) {
+                chunkOverlapVal = maxOverlap;
+                chunkOverlapInput.value = maxOverlap;
+            }
+
+            // Update Label Badges
+            document.getElementById('chunkSizeBadge').textContent = `${chunkSizeVal} ตัวอักษร`;
+            document.getElementById('chunkOverlapBadge').textContent = `${chunkOverlapVal} ตัวอักษร`;
+            document.getElementById('topKRetrievalBadge').textContent = `${document.getElementById('topKRetrieval').value} ชิ้นข้อมูล`;
+            document.getElementById('relevanceThresholdBadge').textContent = `${parseFloat(document.getElementById('relevanceThreshold').value).toFixed(2)} คะแนน`;
+            document.getElementById('topKDisplayBadge').textContent = `${document.getElementById('topKDisplay').value} ชิ้นข้อมูล`;
+            document.getElementById('rerankScoreGapBadge').textContent = `${parseFloat(document.getElementById('rerankScoreGap').value).toFixed(2)} Gap`;
+            document.getElementById('agenticMaxIterationsBadge').textContent = `${document.getElementById('agenticMaxIterations').value} รอบ`;
+            document.getElementById('agenticSufficiencyThresholdBadge').textContent = `${parseFloat(document.getElementById('agenticSufficiencyThreshold').value).toFixed(2)} Threshold`;
+            document.getElementById('agenticMaxChunksBadge').textContent = `${document.getElementById('agenticMaxChunks').value} ชิ้นข้อมูล`;
+
+            // Hybrid search split visualization
+            const hybridDense = parseFloat(document.getElementById('hybridDenseWeight').value) || 0.7;
+            const hybridBm25 = (1.0 - hybridDense).toFixed(2);
+            document.getElementById('hybridBm25Weight').value = hybridBm25;
+            document.getElementById('hybridWeightBadge').textContent = `Semantic ${(hybridDense*100).toFixed(0)}% / Keyword ${(hybridBm25*100).toFixed(0)}%`;
+            document.getElementById('visualSemantic').style.width = `${(hybridDense*100).toFixed(0)}%`;
+            document.getElementById('visualKeyword').style.width = `${(hybridBm25*100).toFixed(0)}%`;
+
+            // Render overlapping blocks
+            updateChunkOverlapVisualizer(chunkSizeVal, chunkOverlapVal);
+        }
+
+        function updateChunkOverlapVisualizer(size, overlap) {
+            const total = size * 2 - overlap;
+            const pctOverlap = (overlap / total) * 100;
+            const pctUnique = ((size - overlap) / total) * 100;
+
+            document.getElementById('visualChunkA').style.width = `${pctUnique.toFixed(2)}%`;
+            document.getElementById('visualOverlap').style.width = `${pctOverlap.toFixed(2)}%`;
+            document.getElementById('visualChunkB').style.width = `${pctUnique.toFixed(2)}%`;
+
+            document.getElementById('visualOverlapLabel').innerHTML = `<i class="fas fa-arrows-alt-h"></i> ส่วนทับซ้อน (Overlap): <strong>${overlap}</strong> ตัวอักษร`;
+        }
+
+        // Animate Slider Transition Helper (concurrent animations)
+        function animateSliderTo(id, targetVal, duration = 450) {
+            const el = document.getElementById(id);
+            if (!el) return Promise.resolve();
+            const startVal = parseFloat(el.value) || 0;
+            if (startVal === targetVal) return Promise.resolve();
+
+            return new Promise(resolve => {
+                const startTime = performance.now();
+
+                function tick(currentTime) {
+                    const elapsed = currentTime - startTime;
+                    const progress = Math.min(elapsed / duration, 1);
+                    const ease = 1 - Math.pow(1 - progress, 3); // Ease-out cubic
+                    const currentVal = startVal + (targetVal - startVal) * ease;
+                    el.value = currentVal;
+
+                    // Trigger input event to update visual previews reactively
+                    el.dispatchEvent(new Event('input'));
+
+                    if (progress < 1) {
+                        requestAnimationFrame(tick);
+                    } else {
+                        el.value = targetVal;
+                        el.dispatchEvent(new Event('input'));
+                        resolve();
+                    }
+                }
+                requestAnimationFrame(tick);
+            });
+        }
+
+        // RAG Preset handling functions
+        let isAnimatingPresets = false;
+        async function applyPreset(presetId) {
+            const preset = RAG_PRESETS[presetId];
+            if (!preset) return;
+
+            isAnimatingPresets = true;
+
+            // Highlight preset card
+            document.querySelectorAll('.preset-card').forEach(card => {
+                card.classList.remove('active');
+            });
+            const selectedCard = document.querySelector(`.preset-card[data-preset="${presetId}"]`);
+            if (selectedCard) {
+                selectedCard.classList.add('active');
+            }
+
+            // Update description panel
+            const descPanel = document.getElementById('presetDescPanel');
+            if (descPanel) {
+                descPanel.classList.remove('custom-active');
+                descPanel.innerHTML = `
+                    <strong>${preset.name}</strong>
+                    <span>${preset.desc}</span>
+                `;
+            }
+
+            // Animate all sliders concurrently
+            const vals = preset.values;
+            const animations = [
+                animateSliderTo('chunkSize', vals.chunkSize),
+                animateSliderTo('chunkOverlap', vals.chunkOverlap),
+                animateSliderTo('topKRetrieval', vals.topKRetrieval),
+                animateSliderTo('topKDisplay', vals.topKDisplay),
+                animateSliderTo('hybridDenseWeight', vals.hybridDenseWeight),
+                animateSliderTo('relevanceThreshold', vals.relevanceThreshold),
+                animateSliderTo('rerankScoreGap', vals.rerankScoreGap),
+                animateSliderTo('agenticMaxIterations', vals.agenticMaxIterations),
+                animateSliderTo('agenticSufficiencyThreshold', vals.agenticSufficiencyThreshold),
+                animateSliderTo('agenticMaxChunks', vals.agenticMaxChunks)
+            ];
+
+            await Promise.all(animations);
+            isAnimatingPresets = false;
+            checkCurrentPresetMatches();
+        }
+
+        function setCustomMode() {
+            if (isAnimatingPresets) return; // Skip custom switch during animated presets
+
+            // Deactivate all preset cards
+            document.querySelectorAll('.preset-card').forEach(card => {
+                card.classList.remove('active');
+            });
+
+            // Activate Custom card
+            const customCard = document.getElementById('presetCardCustom');
+            if (customCard) {
+                customCard.classList.add('active');
+            }
+
+            // Update description panel
+            const descPanel = document.getElementById('presetDescPanel');
+            if (descPanel) {
+                descPanel.classList.add('custom-active');
+                descPanel.innerHTML = `
+                    <strong>โปรไฟล์: กำหนดเอง (Custom Mode)</strong>
+                    <span>คุณกำลังปรับแต่งพารามิเตอร์การค้นหาด้วยตัวเอง เหมาะสำหรับการทดลองเชิงลึกเฉพาะตัว</span>
+                `;
+            }
+        }
+
+        function checkCurrentPresetMatches() {
+            const currentVals = {
+                chunkSize: parseInt(document.getElementById('chunkSize').value),
+                chunkOverlap: parseInt(document.getElementById('chunkOverlap').value),
+                topKRetrieval: parseInt(document.getElementById('topKRetrieval').value),
+                topKDisplay: parseInt(document.getElementById('topKDisplay').value),
+                hybridDenseWeight: parseFloat(document.getElementById('hybridDenseWeight').value),
+                relevanceThreshold: parseFloat(document.getElementById('relevanceThreshold').value),
+                rerankScoreGap: parseFloat(document.getElementById('rerankScoreGap').value),
+                agenticMaxIterations: parseInt(document.getElementById('agenticMaxIterations').value),
+                agenticSufficiencyThreshold: parseFloat(document.getElementById('agenticSufficiencyThreshold').value),
+                agenticMaxChunks: parseInt(document.getElementById('agenticMaxChunks').value)
+            };
+
+            let matchedPresetId = null;
+            for (const [id, preset] of Object.entries(RAG_PRESETS)) {
+                const vals = preset.values;
+                const match = 
+                    currentVals.chunkSize === vals.chunkSize &&
+                    currentVals.chunkOverlap === vals.chunkOverlap &&
+                    currentVals.topKRetrieval === vals.topKRetrieval &&
+                    currentVals.topKDisplay === vals.topKDisplay &&
+                    Math.abs(currentVals.hybridDenseWeight - vals.hybridDenseWeight) < 0.01 &&
+                    Math.abs(currentVals.relevanceThreshold - vals.relevanceThreshold) < 0.01 &&
+                    Math.abs(currentVals.rerankScoreGap - vals.rerankScoreGap) < 0.01 &&
+                    currentVals.agenticMaxIterations === vals.agenticMaxIterations &&
+                    Math.abs(currentVals.agenticSufficiencyThreshold - vals.agenticSufficiencyThreshold) < 0.01 &&
+                    currentVals.agenticMaxChunks === vals.agenticMaxChunks;
+                
+                if (match) {
+                    matchedPresetId = id;
+                    break;
+                }
+            }
+
+            if (matchedPresetId) {
+                // Highlight matched preset
+                document.querySelectorAll('.preset-card').forEach(card => {
+                    card.classList.remove('active');
+                });
+                const card = document.querySelector(`.preset-card[data-preset="${matchedPresetId}"]`);
+                if (card) card.classList.add('active');
+
+                const descPanel = document.getElementById('presetDescPanel');
+                if (descPanel) {
+                    descPanel.classList.remove('custom-active');
+                    descPanel.innerHTML = `
+                        <strong>${RAG_PRESETS[matchedPresetId].name}</strong>
+                        <span>${RAG_PRESETS[matchedPresetId].desc}</span>
+                    `;
+                }
+            } else {
+                setCustomMode();
+            }
+        }
+
+        // Bind preset click listeners
+        document.querySelectorAll('.preset-card[data-preset]').forEach(card => {
+            card.addEventListener('click', () => {
+                const presetId = card.dataset.preset;
+                applyPreset(presetId);
+            });
+        });
+
+        // Bind input change listeners to activate custom mode automatically
+        const ragInputs = [
+            'chunkSize', 'chunkOverlap', 'topKRetrieval', 'topKDisplay', 
+            'hybridDenseWeight', 'relevanceThreshold', 'rerankScoreGap', 
+            'agenticMaxIterations', 'agenticSufficiencyThreshold', 'agenticMaxChunks'
+        ];
+        ragInputs.forEach(id => {
+            const el = document.getElementById(id);
+            if (el) {
+                el.addEventListener('input', () => {
+                    updateSliderBadges();
+                    setCustomMode();
+                });
+            }
+        });
+
+        // Trigger first rendering update for dynamic visuals on load
+        window.addEventListener('DOMContentLoaded', () => {
+            setTimeout(updateSliderBadges, 300);
+        });
+
+        // Trigger slider rendering updates during loading settings
+        const originalInit = init;
+        init = async function() {
+            await originalInit();
+            updateSliderBadges();
+        };
 
         function getProviderEmoji(provider) {
             const emojis = {
