@@ -22,7 +22,7 @@ class ChatService:
     def get_searcher(self):
         return self.searcher
 
-    async def run_classic_pipeline(self, query: str, use_hyde: bool = True, provider: str = "gemini", model_name: str = None, persona_id: str = "default", temp_file_path: str = None, temp_file_name: str = None, use_web_search: bool = False):
+    async def run_classic_pipeline(self, query: str, use_hyde: bool = True, provider: str = "gemini", model_name: str = None, persona_id: str = "default", temp_file_path: str = None, temp_file_name: str = None, use_web_search: bool = False, chat_id: str = None):
         """
         Executes the classic RAG pipeline.
         Yields status updates and final results (non-SSE).
@@ -31,8 +31,30 @@ class ChatService:
         p_name = ProviderName(provider)
         t_total = time.time()
         
-        # 1. HyDE
-        search_query = query
+        # 0. Retrieve history and contextualize query (incorporating smart-skip heuristics)
+        chat_history = []
+        contextualized_query = query
+        
+        if chat_id:
+            from core.database import db
+            all_messages = db.get_messages(chat_id)
+            # Exclude current message (race condition safety)
+            chat_history = all_messages[:-1] if len(all_messages) > 1 else []
+            
+            if chat_history:
+                from core.query_transformer import contextualize_query, needs_contextualization
+                if needs_contextualization(query):
+                    yield {"type": "status", "stage": "hyde", "message": "🧠 กำลังวิเคราะห์ประวัติการสนทนา..."}
+                    contextualized_query = await asyncio.to_thread(
+                        contextualize_query,
+                        query,
+                        chat_history,
+                        provider=p_name,
+                        model_name=model_name
+                    )
+        
+        # 1. HyDE / Contextualized search term
+        search_query = contextualized_query
         hyde_time = 0
         
         from core.database import db
@@ -46,7 +68,7 @@ class ChatService:
             yield {"type": "status", "stage": "hyde", "message": f"🪄 กำลังวิเคราะห์คำค้นหาเว็บ ({w_p})..."}
             t_hyde = time.time()
             from core.query_transformer import web_hyde_transform
-            search_query = await asyncio.to_thread(web_hyde_transform, query, provider=ProviderName(w_p), model_name=w_m)
+            search_query = await asyncio.to_thread(web_hyde_transform, contextualized_query, provider=ProviderName(w_p), model_name=w_m)
             hyde_time = time.time() - t_hyde
             yield {"type": "hyde", "hyde_query": search_query[:200], "time": round(hyde_time, 2)}
         elif use_hyde and config.ENABLE_HYDE and not temp_file_path: # Skip HyDE if file uploaded
@@ -55,7 +77,7 @@ class ChatService:
             
             yield {"type": "status", "stage": "hyde", "message": f"🪄 กำลังสร้าง HyDE ({h_p})..."}
             t_hyde = time.time()
-            search_query = await asyncio.to_thread(hyde_transform, query, provider=ProviderName(h_p), model_name=h_m)
+            search_query = await asyncio.to_thread(hyde_transform, contextualized_query, provider=ProviderName(h_p), model_name=h_m)
             hyde_time = time.time() - t_hyde
             yield {"type": "hyde", "hyde_query": search_query[:200], "time": round(hyde_time, 2)}
  
@@ -99,7 +121,7 @@ class ChatService:
         # Capture response metadata from the generator loop if possible, 
         # but for streaming, the metadata usually comes at the end or we track it here.
         # Note: generator.generate returns a generator for streaming
-        for chunk in generate(query, results[:config.TOP_K_DISPLAY], stream=True, provider=p_name, model_name=model_name, persona_id=persona_id, temp_file_content=temp_file_content):
+        for chunk in generate(query, results[:config.TOP_K_DISPLAY], stream=True, provider=p_name, model_name=model_name, persona_id=persona_id, temp_file_content=temp_file_content, chat_history=chat_history):
             # Check if chunk is LLMStreamChunk
             text = chunk.text if hasattr(chunk, 'text') else str(chunk)
             yield {"type": "token", "text": text}
@@ -119,7 +141,7 @@ class ChatService:
             "total_time": round(total_time, 2),
         }
 
-    async def run_agentic_pipeline(self, query: str, use_hyde: bool = True, provider: str = "gemini", model_name: str = None, persona_id: str = "default", temp_file_path: str = None, temp_file_name: str = None, use_web_search: bool = False):
+    async def run_agentic_pipeline(self, query: str, use_hyde: bool = True, provider: str = "gemini", model_name: str = None, persona_id: str = "default", temp_file_path: str = None, temp_file_name: str = None, use_web_search: bool = False, chat_id: str = None):
         """
         Executes the agentic RAG pipeline.
         """
@@ -139,7 +161,7 @@ class ChatService:
             # Fallback to main selection if agentic brain is not specifically configured
             a_p = a_p or provider
             a_m = a_m or model_name
-
+ 
         # Re-initialize engine with current selection
         self.agentic_engine = AgenticEngine(
             searcher=self.searcher, 
@@ -151,7 +173,8 @@ class ChatService:
             agentic_provider=a_p,
             agentic_model=a_m,
             persona_id=persona_id,
-            use_web_search=use_web_search
+            use_web_search=use_web_search,
+            chat_id=chat_id
         )
         
         # We start with an initial status

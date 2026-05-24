@@ -110,3 +110,92 @@ def web_hyde_transform(query: str, provider: ProviderName = ProviderName.GEMINI,
         print(f"   ⚠️ Web HyDE failed ({e}), using original query")
         return query
 
+
+# ──────────────────────────────────────────────
+# Query Contextualization (Multi-turn Support)
+# ──────────────────────────────────────────────
+CONTEXT_TRIGGERS = [
+    "เขา", "เธอ", "มัน", "นั้น", "ที่พูดถึง", "แบบนั้น", "คนนั้น", "ผู้นั้น", 
+    "สิ่งนี้", "เหล่านี้", "ดังกล่าว", "คราวก่อน", "เมื่อกี้", "ต่อ", "เพิ่มเติม", "ยังไง", "อย่างไร",
+    "แรก", "สุดท้าย", "อีก", "เล่ม", "ข้อ", "ตอน", "เรื่อง", "อัน", "ไหน", "ก่อน", "หลัง",
+    "he", "she", "it", "they", "them", "him", "her", "that", "this", "these", "those"
+]
+
+def needs_contextualization(query: str) -> bool:
+    q_lower = query.lower()
+    return any(t in q_lower for t in CONTEXT_TRIGGERS)
+
+CONTEXTUALIZE_SYSTEM_PROMPT = """คุณคือผู้ช่วย AI ที่เชี่ยวชาญในการปรับแต่งคำถาม (Query Contextualization)
+หน้าที่ของคุณคือวิเคราะห์คำถามล่าสุดของผู้ใช้ ร่วมกับประวัติการสนทนาที่ผ่านมา
+
+หากคำถามล่าสุดมีการอ้างอิงถึงหัวข้อหรือประโยคก่อนหน้า (เช่น การใช้คำสรรพนาม 'เขา', 'มัน', 'สิ่งนี้', 'พวกนั้น' หรือคำที่เกี่ยวเนื่องจากบริบทเดิม)
+ให้คุณเขียนคำถามใหม่แบบเต็ม (Self-contained) ที่สมบูรณ์ ชัดเจน มีบริบทครบถ้วน โดยยังคงเจตนาเดิมของผู้ใช้ เพื่อนำไปใช้สืบค้นข้อมูลในคลังเอกสารต่อได้ทันที
+
+กฎข้อบังคับ:
+1. หากคำถามล่าสุดชัดเจนและสมบูรณ์ในตัวเองอยู่แล้ว หรือไม่ได้อ้างอิงถึงบริบทเก่า ให้ตอบกลับด้วยคำถามเดิมของผู้ใช้คำเดิมทุกประการ ห้ามเปลี่ยนแปลงอะไร
+2. ตอบกลับเฉพาะตัวข้อความคำถามที่ปรับแต่งแล้วหรือคำถามเดิมเท่านั้น ห้ามเขียนอธิบาย ห้ามใส่หัวข้อ และห้ามเขียนเกริ่นนำใดๆ ทั้งสิ้นเด็ดขาด
+
+ตัวอย่างการคุย:
+ประวัติ:
+User: ใครคือผู้ก่อตั้ง Apple?
+AI: สตีฟ จอบส์ และ สตีฟ วอซเนียก
+คำถามใหม่: แล้วเขาเกิดปีไหน?
+-> ผลลัพธ์: สตีฟ จอบส์ เกิดปีอะไร
+
+ประวัติ:
+User: แนะนำหนังสือจิตวิทยาหน่อย
+AI: มีหนังสือ Atomic Habits และ Psychology of Money ครับ
+คำถามใหม่: เล่มแรกพูดเกี่ยวกับอะไร?
+-> ผลลัพธ์: หนังสือ Atomic Habits พูดเกี่ยวกับอะไร"""
+
+def contextualize_query(query: str, chat_history: list[dict], provider: ProviderName, model_name: str = None) -> str:
+    """
+    If chat_history is present and query contains pronouns or context references, 
+    rewrite the query to be a self-contained query using the LLM.
+    """
+    if not chat_history or len(chat_history) == 0:
+        return query
+        
+    if not needs_contextualization(query):
+        print(f"   ⚡ Smart Skip: Query \"{query}\" does not require contextualization.")
+        return query
+
+    try:
+        # Build history prompt structure for LLM
+        history_str = []
+        # Take the last 5 turns (max 10 messages)
+        for msg in chat_history[-10:]:
+            role_label = "User" if msg["role"] == "user" else "AI"
+            history_str.append(f"{role_label}: {msg['content']}")
+            
+        history_context = "\n".join(history_str)
+        
+        prompt = f"""ประวัติการสนทนา:
+{history_context}
+
+---
+คำถามล่าสุด: {query}"""
+
+        messages = [
+            Message(role="system", content=CONTEXTUALIZE_SYSTEM_PROMPT),
+            Message(role="user", content=prompt)
+        ]
+        
+        config = GenerationConfig(temperature=0.1, max_tokens=256)
+        response = llm_manager.generate(provider, messages, model_name=model_name, config=config)
+        
+        rewritten = response.text.strip()
+        # Clean up any potential markdown wrapper or prefixes if LLM hallucinated them
+        if rewritten.startswith("-> ผลลัพธ์:"):
+            rewritten = rewritten.replace("-> ผลลัพธ์:", "").strip()
+        elif rewritten.startswith("ผลลัพธ์:"):
+            rewritten = rewritten.replace("ผลลัพธ์:", "").strip()
+            
+        print(f"   🧠 Contextualized: \"{query}\" → \"{rewritten}\" (via {response.provider})")
+        return rewritten
+
+    except Exception as e:
+        print(f"   ⚠️ Contextualization failed ({e}), using original query")
+        return query
+
+

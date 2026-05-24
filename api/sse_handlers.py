@@ -25,7 +25,7 @@ async def classic_event_generator(query: str, use_hyde: bool, provider: str = "g
     yield {"event": "session_init", "data": json.dumps({"persona": p_config.get("meta", {})})}
 
     full_ai_response = ""
-    async for event in chat_service.run_classic_pipeline(query, use_hyde, provider, model, persona_id=persona_id, temp_file_path=temp_file_path, temp_file_name=temp_file_name, use_web_search=use_web_search):
+    async for event in chat_service.run_classic_pipeline(query, use_hyde, provider, model, persona_id=persona_id, temp_file_path=temp_file_path, temp_file_name=temp_file_name, use_web_search=use_web_search, chat_id=chat_id):
         e_type = event.get("type")
         
         if e_type == "status":
@@ -82,7 +82,7 @@ async def agentic_event_generator(query: str, use_hyde: bool, provider: str = "g
     full_ai_response = ""
     last_stage_time = time.time()
     
-    async for event_wrapper in chat_service.run_agentic_pipeline(query, use_hyde, provider, model, persona_id=persona_id, temp_file_path=temp_file_path, temp_file_name=temp_file_name, use_web_search=use_web_search):
+    async for event_wrapper in chat_service.run_agentic_pipeline(query, use_hyde, provider, model, persona_id=persona_id, temp_file_path=temp_file_path, temp_file_name=temp_file_name, use_web_search=use_web_search, chat_id=chat_id):
         now = time.time()
         
         if event_wrapper["type"] == "status":

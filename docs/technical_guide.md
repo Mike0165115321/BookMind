@@ -33,6 +33,7 @@
 21. [🌐 Web Search (DuckDuckGo)](#21-web-search-duckduckgo)
 22. [📄 File Upload (In-memory Document Loader)](#22-file-upload-in-memory-document-loader)
 23. [🔀 Mutually Exclusive Pipeline (Architecture)](#23-mutually-exclusive-pipeline-architecture)
+24. [🧠 Conversation Memory & Heuristic Fast-Path](#24-conversation-memory--heuristic-fast-path)
 
 ---
 
@@ -1524,6 +1525,40 @@ sequenceDiagram
 
 ---
 
+## 24. 🧠 Conversation Memory & Heuristic Fast-Path (v4.2)
+
+ระบบจัดเก็บประวัติการสนทนาและสวมบริบทแบบ Multi-turn ถูกออกแบบโดยคำนึงถึง **Latency & Cost Optimization** เพื่อไม่ให้การใช้ RAG ยาวนานส่งผลเสียต่อเวลาตอบสนองและต้นทุนค่า Token ของผู้ใช้
+
+### Heuristic Fast-Path Gateway (การคัดกรองอัจฉริยะ)
+
+ในการคุยแบบสลับรอบ (Multi-turn) การเรียก LLM เพื่อปรับปรุงคำค้นหา (Query Contextualization) ในทุกๆ รอบ จะสร้างภาระด้านต้นทุนและเพิ่มเวลาตอบสนอง (Latency) ~300-500ms โดยไม่จำเป็นสำหรับคำถามที่เป็นเอกเทศ (Stateless Queries)
+
+ระบบจึงนำเทคนิค **Heuristic Fast-Path Gateway** มาใช้ โดยกรองคำถามด้วย `CONTEXT_TRIGGERS` (0ms overhead) ก่อนที่จะตัดสินใจเรียกใช้ LLM:
+
+```
+คำถามล่าสุด
+    │
+    ├─► [ประวัติว่างเปล่า / Turn แรก] ───────────────► ⚡ Fast-Path (ข้าม LLM)
+    │
+    ├─► [ไม่มีคำระบุความสัมพันธ์ / สรรพนาม] ─────────► ⚡ Fast-Path (ข้าม LLM)
+    │   (เช่น "เล่าปี่คือใคร?")
+    │
+    └─► [มีคำระบุความสัมพันธ์ / สรรพนาม] ────────────► 🔬 Contextualization Loop
+        (เช่น "แล้ว อีกคนล่ะ", "เล่มแรก", "เขามีบทบาทอย่างไร")
+```
+
+### รายการคำคัดกรองบริบท (`CONTEXT_TRIGGERS`)
+ประกอบด้วยคำสรรพนาม คำลักษณนาม คำชี้เฉพาะ และความสัมพันธ์ในภาษาไทยและภาษาอังกฤษ:
+- **คำสรรพนามและชี้เฉพาะ:** `เขา`, `เธอ`, `มัน`, `นั้น`, `นี้`, `นู้น`, `ที่พูดถึง`, `แบบนั้น`, `ดังกล่าว`
+- **ลักษณนามและลำดับเวลา:** `แรก`, `สุดท้าย`, `อีก`, `เล่ม`, `ข้อ`, `ตอน`, `เรื่อง`, `อัน`, `ไหน`, `ก่อน`, `หลัง`
+- **ภาษาอังกฤษ:** `he`, `she`, `it`, `they`, `them`, `him`, `her`, `that`, `this`, `these`, `those`
+
+### ผลดีด้านการจัดการหนี้ทางเทคนิค (Technical Debt Management)
+- **ไม่ใช่หนี้ที่ซ่อนเร้น:** การใช้ Heuristic ร่วมกับ LLM ได้ถูกกำหนดให้อยู่ในสถาปัตยกรรมแบบเปิด เผยตัว และมีเอกสารนี้อ้างอิงชัดเจน (Intentional Architectural Trade-Off)
+- **ปรับแต่งได้ง่าย:** หากรูปแบบภาษาของผู้ใช้เปลี่ยนแปลงไปในอนาคต นักพัฒนาเพียงแค่เข้ามาเพิ่มหรือลดคีย์เวิร์ดใน `CONTEXT_TRIGGERS` ภายใน [query_transformer.py](file:///home/mikedev/BookMind/core/query_transformer.py) หรือจะย้ายไปเก็บใน Database เพื่อให้ Admin ปรับแก้ได้ทาง Settings ในอนาคต
+
+---
+
 > 📅 **Last Updated:** May 2026
 > 📝 **Author:** Antigravity AI
-> 🔖 **Version:** 4.1 — **Web Search HyDE, Resilience, Dynamic Settings & Premium UI Enhancements**
+> 🔖 **Version:** 4.2 — **Multi-turn Conversation Memory, Heuristic Fast-Path & Contextual RAG**

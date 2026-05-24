@@ -40,7 +40,8 @@ def generate(
     provider: ProviderName = ProviderName.GEMINI,
     model_name: str = None,
     persona_id: str = "default",
-    temp_file_content: str = None
+    temp_file_content: str = None,
+    chat_history: list = None
 ):
     """
     Generate an answer using the llm_manager.
@@ -100,9 +101,16 @@ def generate(
     
     # 3. Create Message objects
     messages = [
-        Message(role="system", content=system_prompt),
-        Message(role="user", content=prompt)
+        Message(role="system", content=system_prompt)
     ]
+    
+    if chat_history:
+        # Inject the last 5 turns (10 messages) of conversation history
+        for msg in chat_history[-10:]:
+            role = "assistant" if msg["role"] == "ai" else msg["role"]
+            messages.append(Message(role=role, content=msg["content"]))
+            
+    messages.append(Message(role="user", content=prompt))
     
     # 4. Call llm_manager
     if stream:

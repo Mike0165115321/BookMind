@@ -37,7 +37,8 @@ class AgenticEngine:
         agentic_provider: str = None,
         agentic_model: str = None,
         persona_id: str = "default",
-        use_web_search: bool = False
+        use_web_search: bool = False,
+        chat_id: str = None
     ):
         self.searcher = searcher
         self.use_hyde = use_hyde
@@ -54,17 +55,44 @@ class AgenticEngine:
         self.agentic_provider = agentic_provider
         self.agentic_model = agentic_model
         self.persona_id = persona_id
+        self.chat_id = chat_id
 
     def execute(self, query: str) -> Generator[InternalEngineEvent, None, None]:
         """
         Runs the full agentic loop, yielding internal engine events.
         """
-        memory = AgentMemory(original_query=query)
+        chat_history = []
+        contextualized_query = query
+        
+        if self.chat_id:
+            from core.database import db
+            all_messages = db.get_messages(self.chat_id)
+            # Exclude the current message (race-condition protection)
+            chat_history = all_messages[:-1] if len(all_messages) > 1 else []
+            
+            if chat_history:
+                from core.query_transformer import contextualize_query, needs_contextualization
+                if needs_contextualization(query):
+                    yield InternalEngineEvent(
+                        event_type="status",
+                        data={
+                            "stage": "decompose",
+                            "message": "🧠 กำลังวิเคราะห์ประวัติการสนทนา..."
+                        }
+                    )
+                    contextualized_query = contextualize_query(
+                        query,
+                        chat_history,
+                        provider=self.provider,
+                        model_name=self.model_name
+                    )
+                    
+        memory = AgentMemory(original_query=contextualized_query)
         search_history = []
         
-        # 1. Decompose
+        # 1. Decompose (using the contextualized query to avoid double contextualization issues)
         decomp = decompose(
-            query=query, 
+            query=contextualized_query, 
             agentic_provider=self.agentic_provider, 
             agentic_model=self.agentic_model
         )
@@ -170,7 +198,8 @@ class AgenticEngine:
             stream=True, 
             provider=self.provider, 
             model_name=self.model_name,
-            persona_id=self.persona_id
+            persona_id=self.persona_id,
+            chat_history=chat_history
         ):
             full_answer += chunk.text if hasattr(chunk, 'text') else str(chunk)
             yield InternalEngineEvent(event_type="token", data={"text": chunk})
