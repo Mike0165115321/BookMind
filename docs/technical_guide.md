@@ -1185,12 +1185,13 @@ Web UI ถูกแยกเป็นสัดส่วนโดยใช้ Fas
 
 | Frontend | Vanilla HTML/CSS/JS |
 
-### 🎨 Premium UI Layout (v3.5)
+### 🎨 Premium UI Layout (v4.1 Enhancements)
 หน้าตาของระบบถูกยกระดับสู่มาตรฐาน **Gemini Design Language**:
 1. **Sidebar Rail & Panel**: แยกส่วนของเมนูหลัก (Icon-only) และส่วนขยายเนื้อหา (เช่น ประวัติการแชท) เพื่อเพิ่มพื้นที่ใช้งานสูงสุด
-2. **Harmonized Admin Panel**: หน้าจัดการข้อมูลถูกปรับจูนให้เป็นธีมเดียวกับหน้าแชท (Navy/Slate) ทำให้ผู้ใช้รู้สึกถึงความเป็นแอปพลิเคชันที่ต่อเนื่อง
-3. **Glassmorphism & Micro-animations**: ใช้เอฟเฟกต์โปร่งแสงและแอนิเมชันขนาดเล็กในการเปลี่ยนผ่านหน้าจอ เพื่อความพรีเมียมและลื่นไหล
-4. **Responsive Flexbox**: เลย์เอาต์ที่ยืดหยุ่น รองรับการย่อ/ขยายหน้าจอ และการใช้งานบนอุปกรณ์ต่างๆ ได้อย่างสมบูรณ์แบบ
+2. **Harmonized Admin & Settings Panel**: หน้าจัดการข้อมูลและการตั้งค่าถูกปรับจูนให้เป็นธีมเดียวกัน ดึงสไตล์แยกเป็น `settings.css` มีการนำทางแบบแนวนอน (Horizontal Navigation) พร้อม **Interactive Toggle Controls** เพื่อเปิดปิดโหมด HyDE และ Agentic ได้ทันที
+3. **RAG Visualization**: ในหน้าการตั้งค่ามีการแสดงแผนภาพการทำงานของระบบและคำนวณสัดส่วนน้ำหนักแบบ Dynamic อัตโนมัติ
+4. **Glassmorphism & Micro-animations**: ใช้เอฟเฟกต์โปร่งแสงและแอนิเมชันขนาดเล็กในการเปลี่ยนผ่านหน้าจอ เพื่อความพรีเมียมและลื่นไหล
+5. **Responsive Flexbox**: เลย์เอาต์ที่ยืดหยุ่น รองรับการย่อ/ขยายหน้าจอ และการใช้งานบนอุปกรณ์ต่างๆ ได้อย่างสมบูรณ์แบบ
 | Markdown | marked.js |
 | Design | Dark theme + glassmorphism + Inter font |
 
@@ -1266,7 +1267,10 @@ RAG/
 
 ระบบแยก config เป็น 2 ระดับ:
 
-### `config.py` (root) — RAG Tuning
+### Dynamic RAG Tuning (via Web UI & SQLite)
+ใน v4.1 พารามิเตอร์หลักของ RAG สามารถปรับเปลี่ยนได้แบบ **Real-time** ผ่านหน้าการตั้งค่า (Settings UI) ซึ่งจะถูกบันทึกลง SQLite โดยไม่ต้องแก้ไขโค้ด หากค่าใดไม่ได้ถูกตั้งไว้จะใช้ค่า Defaults จากโค้ดด้านล่าง:
+
+### `config.py` (root) — RAG Tuning Defaults
 
 ```python
 # Hybrid Search weights (must sum to 1.0)
@@ -1482,6 +1486,8 @@ sequenceDiagram
 
 ### โครงสร้างการทำงาน
 - **Library:** ใช้ `duckduckgo-search` (`ddgs`) ซึ่งเป็นไลบรารีที่ไม่ต้องใช้ API Key และติดตั้งได้ง่าย
+- **Multi-backend Fallback:** เพิ่มระบบสลับช่องทางการเชื่อมต่ออัตโนมัติ (html, lite) หาก duckduckgo หลัก (api) ขัดข้อง เพื่อรักษาความเสถียร (Resilience)
+- **Web Search HyDE & Query Sanitization:** มีการทำความสะอาดและวิเคราะห์คำถามแบบ HyDE ก่อนส่งไปค้นหาหน้าเว็บจริง ช่วยให้คีย์เวิร์ดแม่นยำขึ้นสำหรับภาษาไทย
 - **Pipeline:** ถูกออกแบบมาเป็นแบบ **Exclusive** (อ่านเพิ่มเติมที่ส่วน 23)
 - **Agentic Integration:** ในโหมด Agentic RAG ระบบสามารถดึง Web Search มาใช้ใน sub-queries แต่ละขั้นตอนได้ หากเปิดโหมด Web
 
@@ -1520,4 +1526,4 @@ sequenceDiagram
 
 > 📅 **Last Updated:** May 2026
 > 📝 **Author:** Antigravity AI
-> 🔖 **Version:** 4.1 — **Persona Management, Web Search & Architecture Pipeline**
+> 🔖 **Version:** 4.1 — **Web Search HyDE, Resilience, Dynamic Settings & Premium UI Enhancements**
