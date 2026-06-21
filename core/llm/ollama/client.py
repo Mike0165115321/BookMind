@@ -85,7 +85,8 @@ class OllamaClient(BaseLLMClient):
             "stream": False,
             "options": {
                 "temperature": config.temperature if config else ollama_config.temperature,
-                "num_predict": config.max_tokens if config else ollama_config.max_tokens
+                "num_predict": config.max_tokens if config else ollama_config.max_tokens,
+                "num_ctx": ollama_config.num_ctx
             }
         }
 
@@ -125,7 +126,8 @@ class OllamaClient(BaseLLMClient):
             "stream": True,
             "options": {
                 "temperature": config.temperature if config else ollama_config.temperature,
-                "num_predict": config.max_tokens if config else ollama_config.max_tokens
+                "num_predict": config.max_tokens if config else ollama_config.max_tokens,
+                "num_ctx": ollama_config.num_ctx
             }
         }
 

@@ -28,6 +28,10 @@ _LOCAL_RERANKER = "/home/mikedev/MyModels/Model-RAG/BAAI-bge-reranker-v2-m3"
 MODEL_EMBEDDING = _LOCAL_EMBEDDING if os.path.exists(_LOCAL_EMBEDDING) else "intfloat/multilingual-e5-large"
 MODEL_RERANKER = _LOCAL_RERANKER if os.path.exists(_LOCAL_RERANKER) else "BAAI/bge-reranker-v2-m3"
 
+# Force RAG models to run on CPU to save VRAM for Ollama
+FORCE_CPU_FOR_RAG = True
+
+
 # ──────────────────────────────────────────────
 # Index
 # ──────────────────────────────────────────────

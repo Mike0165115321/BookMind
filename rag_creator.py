@@ -74,7 +74,8 @@ class TextChunker:
 
 class RAGCreator:
     def __init__(self, model_name=None):
-        self.device = "cuda" if torch.cuda.is_available() else "cpu"
+        import config
+        self.device = "cpu" if getattr(config, "FORCE_CPU_FOR_RAG", False) else ("cuda" if torch.cuda.is_available() else "cpu")
         model_path = model_name or config.MODEL_EMBEDDING
         self.model = SentenceTransformer(model_path, device=self.device)
         self.chunker = TextChunker()

@@ -11,7 +11,8 @@ class Reranker:
     Supports adaptive reranking based on score gaps.
     """
     def __init__(self, model_path: str = None):
-        self.device = "cuda" if torch.cuda.is_available() else "cpu"
+        import config
+        self.device = "cpu" if getattr(config, "FORCE_CPU_FOR_RAG", False) else ("cuda" if torch.cuda.is_available() else "cpu")
         model_path = model_path or config.MODEL_RERANKER
         self.model = CrossEncoder(model_path, device=self.device)
 
