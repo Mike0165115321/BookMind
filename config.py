@@ -9,7 +9,7 @@ import os
 # Application Server
 # ──────────────────────────────────────────────
 APP_HOST = "0.0.0.0"
-APP_PORT = 8080        # Change this if 8000 is occupied
+APP_PORT = 8081        # Change this if 8000 is occupied
 
 # ──────────────────────────────────────────────
 # Paths
